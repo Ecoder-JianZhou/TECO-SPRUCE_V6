@@ -174,7 +174,7 @@ module mcmc
                 enddo
             endif ! finish ! initialize the TECO model
 
-            call teco_simu(vegn)            ! run the model
+            call teco_simu(vegn, .True.)            ! run the model
             
             temp_upgraded = upgraded
             call costFuncObs()          ! calculate the cost between observations and simulations
@@ -203,15 +203,15 @@ module mcmc
                 do ipft = 1, npft
                     arr_params_set(ipft)%tot_paramsets(upgraded,:) = mc_DApar(ipft)%DApar
                 enddo
-                if (do_mc_out_hr) then
-                    call mcmc_update_outputs(upgraded, tot_paramsets_outs_h, outVars_h)
-                endif
-                if (do_mc_out_day)then
-                    call mcmc_update_outputs(upgraded, tot_paramsets_outs_d, outVars_d)
-                endif
-                if (do_mc_out_mon) then
-                    call mcmc_update_outputs(upgraded, tot_paramsets_outs_m, outVars_m)
-                endif
+                ! if (do_mc_out_hr) then
+                !     call mcmc_update_outputs(upgraded, tot_paramsets_outs_h, outVars_h)
+                ! endif
+                ! if (do_mc_out_day)then
+                !     call mcmc_update_outputs(upgraded, tot_paramsets_outs_d, outVars_d)
+                ! endif
+                ! if (do_mc_out_mon) then
+                !     call mcmc_update_outputs(upgraded, tot_paramsets_outs_m, outVars_m)
+                ! endif
             else
                 reject = reject + 1
             endif

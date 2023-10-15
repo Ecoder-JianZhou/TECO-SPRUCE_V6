@@ -1,32 +1,30 @@
 module datatypes
     implicit none
     ! settings
-    character(100) :: teco_configfile  ! the TECO cofig file
-    character(50)  :: case_name       ! define the case name
-    logical :: do_simu                ! simulation mode
-    logical :: do_mcmc                ! MCMC for data assimilation mode
-    logical :: do_spinup              ! spinup mode
-    logical :: do_matrix              ! whether run matrix or not
-    logical :: do_restart             ! whether read restart file or not
+    character(100) :: teco_configfile  ! the TECO config file
+    character(50)  :: case_name        ! define the case name
+    logical :: do_simu                 ! simulation mode
+    logical :: do_mcmc                 ! MCMC for data assimilation mode
+    logical :: do_spinup               ! spinup mode
+    logical :: do_matrix               ! whether run matrix or not
+    logical :: do_restart              ! whether read restart file or not
     ! simulation selections
-    logical :: do_snow                ! do soil snow process or not
-    logical :: do_soilphy             ! do soil physics or not
-    logical :: do_EBG                 ! run EBG or not based on Ma et al., 2022
-    logical :: do_ndep                ! N deposit
-    logical :: do_leap                ! judge leap year or not
+    logical :: do_snow                 ! do soil snow process or not
+    logical :: do_soilphy              ! do soil physics or not
+    logical :: do_EBG                  ! run EBG or not based on Ma et al., 2022
+    logical :: do_ndep                 ! N deposit
+    logical :: do_leap                 ! judge leap year or not
     ! output selections
     logical :: do_out_hr
     logical :: do_out_day
     logical :: do_out_mon
     logical :: do_out_yr
     ! 
-    logical :: do_spruce = .False.
-
+    logical :: do_spruce = .False.    ! set the spruce site handle in 1974 for cutting the vegetation
     integer :: dtimes                 ! 24: hourly simulation
     ! set the input and output path and files
     character(200) :: inDir
     character(200) :: outDir
-
     ! input files
     character(300) :: climfile
     character(300) :: watertablefile
@@ -34,7 +32,8 @@ module datatypes
     character(300) :: in_restartfile
     character(300) :: mcmc_configfile
     character(300) :: spinup_configfile
-    ! above settings from the nml file
+    ! above settings from the nml file --------------------------------------------------
+    
     ! output path
     character(250) :: outDir_nc     = "results_nc_format"
     character(250) :: outDir_csv    = "results_csv_format"
@@ -54,10 +53,10 @@ module datatypes
     real :: CO2treat = 0.        ! CO2 treatmant, up to CO2treat, not add to Ca. CO2
     real :: N_fert   = 0.        ! 5.6 ! (11.2 gN m-2 yr-1, in spring, Duke Forest FACE)
     ! ---------------------------------------------------------------------------------------
-    integer :: nHours, nDays, nMonths, nYears
+    integer :: nHours, nDays, nMonths, nYears         ! how many iterations hourly, daily, monthly and yearly
     ! --------------------------
     
-    integer, parameter :: nlayers = 10                ! how many
+    integer, parameter :: nlayers = 10                ! how many layers
     real,    parameter :: pi      = 3.1415926
     ! physical constants
     real,    parameter :: tauL(3) = (/0.1, 0.425, 0.00/)  ! leaf transmittance for vis, for NIR, for thermal
@@ -269,229 +268,120 @@ module datatypes
 
     ! just one time output
     ! outputs
-    type mc_spec_outvars_type
-        ! carbon fluxes (Kg C m-2 s-1)
-        real, allocatable :: gpp
-        real, allocatable :: nee
-        real, allocatable :: npp
-        real, allocatable :: nppLeaf
-        real, allocatable :: nppWood
-        real, allocatable :: nppStem
-        real, allocatable :: nppRoot
-        real, allocatable :: nppOther    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
-        real, allocatable :: ra
-        real, allocatable :: raLeaf
-        real, allocatable :: raStem
-        real, allocatable :: raRoot
-        real, allocatable :: raOther
-        real, allocatable :: rMaint
-        real, allocatable :: rGrowth
-        real, allocatable :: nbp
-        ! Carbon Pools  (KgC m-2)
-        real, allocatable :: cLeaf
-        real, allocatable :: cStem
-        real, allocatable :: cRoot
-        ! Nitrogen pools (kgN m-2)
-        real, allocatable :: nLeaf
-        real, allocatable :: nStem
-        real, allocatable :: nRoot
-        ! real, allocatable :: nOther(:)
-        ! water fluxes (kg m-2 s-1)
-        real, allocatable :: tran
-        ! other
-        real, allocatable :: lai                     ! m2 m-2, Leaf area index
-    end type mc_spec_outvars_type
-
-    ! total outputs
-    type mc_outvars_data_type
-        integer, allocatable :: year
-        integer, allocatable :: doy
-        integer, allocatable :: hour
-        type(spec_outvars_type), allocatable :: allSpec(:)
-        ! carbon fluxes (Kg C m-2 s-1)
-        real, allocatable :: gpp
-        real, allocatable :: nee
-        real, allocatable :: npp
-        real, allocatable :: nppLeaf
-        real, allocatable :: nppWood
-        real, allocatable :: nppStem
-        real, allocatable :: nppRoot
-        real, allocatable :: nppOther           ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
-        real, allocatable :: ra
-        real, allocatable :: raLeaf
-        real, allocatable :: raStem
-        real, allocatable :: raRoot
-        real, allocatable :: raOther
-        real, allocatable :: rMaint
-        real, allocatable :: rGrowth            ! maintenance respiration and growth respiration
-        real, allocatable :: rh
-        real, allocatable :: nbp                ! heterotrophic respiration. NBP(net biome productivity) = GPP - Rh - Ra - other losses  
-        real, allocatable :: wetlandCH4
-        real, allocatable :: wetlandCH4prod
-        real, allocatable :: wetlandCH4cons     ! wetland net fluxes of CH4, CH4 production, CH4 consumption
-        ! Carbon Pools  (KgC m-2)
-        real, allocatable :: cLeaf
-        real, allocatable :: cStem
-        real, allocatable :: cRoot
-        real, allocatable :: cOther              ! cOther: carbon biomass in other plant organs(reserves, fruits), Jian: maybe NSC storage in TECO?
-        real, allocatable :: cLitter
-        real, allocatable :: cLitterCwd          ! litter (excluding coarse woody debris), Jian: fine litter in TECO?, cLitterCwd: carbon in coarse woody debris
-        real, allocatable :: cSoil
-        real, allocatable :: cSoilLevels(:)
-        real, allocatable :: cSoilFast
-        real, allocatable :: cSoilSlow
-        real, allocatable :: cSoilPassive        ! cSoil: soil organic carbon (Jian: total soil carbon); cSoilLevels(depth-specific soil organic carbon, Jian: depth?); cSoilPools (different pools without depth)
-        real, allocatable :: CH4(:)              ! methane concentration
-        ! Nitrogen fluxes (kgN m-2 s-1)
-        real, allocatable :: fBNF
-        real, allocatable :: fN2O
-        real, allocatable :: fNloss
-        real, allocatable :: fNnetmin
-        real, allocatable :: fNdep               ! fBNF: biological nitrogen fixation; fN2O: loss of nitrogen through emission of N2O; fNloss:Total loss of nitrogen to the atmosphere and from leaching; net mineralizaiton and deposition of N
-        ! Nitrogen pools (kgN m-2)
-        real, allocatable :: nLeaf
-        real, allocatable :: nStem
-        real, allocatable :: nRoot
-        real, allocatable :: nOther
-        real, allocatable :: nLitter
-        real, allocatable :: nLitterCwd
-        real, allocatable :: nSoil
-        real, allocatable :: nMineral                ! nMineral: Mineral nitrogen pool
-        ! energy fluxes (W m-2)
-        real, allocatable :: hfls
-        real, allocatable :: hfss
-        real, allocatable :: SWnet
-        real, allocatable :: LWnet                   ! Sensible heat flux; Latent heat flux; Net shortwave radiation; Net longwave radiation
-        ! water fluxes (kg m-2 s-1)
-        real, allocatable :: ec
-        real, allocatable :: tran
-        real, allocatable :: es                      ! Canopy evaporation; Canopy transpiration; Soil evaporation
-        real, allocatable :: hfsbl                   ! Snow sublimation
-        real, allocatable :: mrro
-        real, allocatable :: mrros
-        real, allocatable :: mrrob                   ! Total runoff; Surface runoff; Subsurface runoff
-        ! other
-        real, allocatable :: mrso(:)           ! Kg m-2, soil moisture in each soil layer
-        real, allocatable :: tsl(:)            ! K, soil temperature in each soil layer
-        real, allocatable :: tsland                  ! K, surface temperature
-        real, allocatable :: wtd                     ! m, Water table depth
-        real, allocatable :: snd                     ! m, Total snow depth
-        real, allocatable :: lai                     ! m2 m-2, Leaf area index 
-    end type mc_outvars_data_type
-    type(mc_outvars_data_type) :: mc_outVars_h, mc_outVars_d, mc_outVars_m, mc_outVars_y
-
-    ! outputs
     type spec_outvars_type
         ! carbon fluxes (Kg C m-2 s-1)
-        real, allocatable :: gpp(:)
-        real, allocatable :: nee(:)
-        real, allocatable :: npp(:)
-        real, allocatable :: nppLeaf(:)
-        real, allocatable :: nppWood(:)
-        real, allocatable :: nppStem(:)
-        real, allocatable :: nppRoot(:)
-        real, allocatable :: nppOther(:)    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
-        real, allocatable :: ra(:)
-        real, allocatable :: raLeaf(:)
-        real, allocatable :: raStem(:)
-        real, allocatable :: raRoot(:)
-        real, allocatable :: raOther(:)
-        real, allocatable :: rMaint(:)
-        real, allocatable :: rGrowth(:)
-        real, allocatable :: nbp(:)
+        real :: gpp
+        real :: nee
+        real :: npp
+        real :: nppLeaf
+        real :: nppWood
+        real :: nppStem
+        real :: nppRoot
+        real :: nppOther    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+        real :: ra
+        real :: raLeaf
+        real :: raStem
+        real :: raRoot
+        real :: raOther
+        real :: rMaint
+        real :: rGrowth
+        real :: nbp
         ! Carbon Pools  (KgC m-2)
-        real, allocatable :: cLeaf(:)
-        real, allocatable :: cStem(:)
-        real, allocatable :: cRoot(:)
+        real :: cLeaf
+        real :: cStem
+        real :: cRoot
         ! Nitrogen pools (kgN m-2)
-        real, allocatable :: nLeaf(:)
-        real, allocatable :: nStem(:)
-        real, allocatable :: nRoot(:)
-        ! real, allocatable :: nOther(:)
+        real :: nLeaf
+        real :: nStem
+        real :: nRoot
+        ! real :: nOther(:)
         ! water fluxes (kg m-2 s-1)
-        real, allocatable :: tran(:)
+        real :: tran
         ! other
-        real, allocatable :: lai(:)                     ! m2 m-2, Leaf area index
+        real :: lai                     ! m2 m-2, Leaf area index
     end type spec_outvars_type
 
     ! total outputs
     type outvars_data_type
-        integer, allocatable :: year(:)
-        integer, allocatable :: doy(:)
-        integer, allocatable :: hour(:)
+        integer :: year
+        integer :: doy
+        integer :: hour
         type(spec_outvars_type), allocatable :: allSpec(:)
         ! carbon fluxes (Kg C m-2 s-1)
-        real, allocatable :: gpp(:)
-        real, allocatable :: nee(:)
-        real, allocatable :: npp(:)
-        real, allocatable :: nppLeaf(:)
-        real, allocatable :: nppWood(:)
-        real, allocatable :: nppStem(:)
-        real, allocatable :: nppRoot(:)
-        real, allocatable :: nppOther(:)           ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
-        real, allocatable :: ra(:)
-        real, allocatable :: raLeaf(:)
-        real, allocatable :: raStem(:)
-        real, allocatable :: raRoot(:)
-        real, allocatable :: raOther(:)
-        real, allocatable :: rMaint(:)
-        real, allocatable :: rGrowth(:)            ! maintenance respiration and growth respiration
-        real, allocatable :: rh(:)
-        real, allocatable :: nbp(:)                ! heterotrophic respiration. NBP(net biome productivity) = GPP - Rh - Ra - other losses  
-        real, allocatable :: wetlandCH4(:)
-        real, allocatable :: wetlandCH4prod(:)
-        real, allocatable :: wetlandCH4cons(:)     ! wetland net fluxes of CH4, CH4 production, CH4 consumption
+        real :: gpp
+        real :: nee
+        real :: npp
+        real :: nppLeaf
+        real :: nppWood
+        real :: nppStem
+        real :: nppRoot
+        real :: nppOther           ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+        real :: ra
+        real :: raLeaf
+        real :: raStem
+        real :: raRoot
+        real :: raOther
+        real :: rMaint
+        real :: rGrowth            ! maintenance respiration and growth respiration
+        real :: rh
+        real :: nbp                ! heterotrophic respiration. NBP(net biome productivity) = GPP - Rh - Ra - other losses  
+        real :: wetlandCH4
+        real :: wetlandCH4prod
+        real :: wetlandCH4cons     ! wetland net fluxes of CH4, CH4 production, CH4 consumption
         ! Carbon Pools  (KgC m-2)
-        real, allocatable :: cLeaf(:)
-        real, allocatable :: cStem(:)
-        real, allocatable :: cRoot(:)
-        real, allocatable :: cOther(:)              ! cOther: carbon biomass in other plant organs(reserves, fruits), Jian: maybe NSC storage in TECO?
-        real, allocatable :: cLitter(:)
-        real, allocatable :: cLitterCwd(:)          ! litter (excluding coarse woody debris), Jian: fine litter in TECO?, cLitterCwd: carbon in coarse woody debris
-        real, allocatable :: cSoil(:)
-        real, allocatable :: cSoilLevels(:, :)
-        real, allocatable :: cSoilFast(:)
-        real, allocatable :: cSoilSlow(:)
-        real, allocatable :: cSoilPassive(:)        ! cSoil: soil organic carbon (Jian: total soil carbon); cSoilLevels(depth-specific soil organic carbon, Jian: depth?); cSoilPools (different pools without depth)
-        real, allocatable :: CH4(:, :)              ! methane concentration
+        real :: cLeaf
+        real :: cStem
+        real :: cRoot
+        real :: cOther              ! cOther: carbon biomass in other plant organs(reserves, fruits), Jian: maybe NSC storage in TECO?
+        real :: cLitter
+        real :: cLitterCwd          ! litter (excluding coarse woody debris), Jian: fine litter in TECO?, cLitterCwd: carbon in coarse woody debris
+        real :: cSoil
+        real :: cSoilLevels(nlayers)
+        real :: cSoilFast
+        real :: cSoilSlow
+        real :: cSoilPassive        ! cSoil: soil organic carbon (Jian: total soil carbon); cSoilLevels(depth-specific soil organic carbon, Jian: depth?); cSoilPools (different pools without depth)
+        real :: CH4(nlayers)              ! methane concentration
         ! Nitrogen fluxes (kgN m-2 s-1)
-        real, allocatable :: fBNF(:)
-        real, allocatable :: fN2O(:)
-        real, allocatable :: fNloss(:)
-        real, allocatable :: fNnetmin(:)
-        real, allocatable :: fNdep(:)               ! fBNF: biological nitrogen fixation; fN2O: loss of nitrogen through emission of N2O; fNloss:Total loss of nitrogen to the atmosphere and from leaching; net mineralizaiton and deposition of N
+        real :: fBNF
+        real :: fN2O
+        real :: fNloss
+        real :: fNnetmin
+        real :: fNdep               ! fBNF: biological nitrogen fixation; fN2O: loss of nitrogen through emission of N2O; fNloss:Total loss of nitrogen to the atmosphere and from leaching; net mineralizaiton and deposition of N
         ! Nitrogen pools (kgN m-2)
-        real, allocatable :: nLeaf(:)
-        real, allocatable :: nStem(:)
-        real, allocatable :: nRoot(:)
-        real, allocatable :: nOther(:)
-        real, allocatable :: nLitter(:)
-        real, allocatable :: nLitterCwd(:)
-        real, allocatable :: nSoil(:)
-        real, allocatable :: nMineral(:)                ! nMineral: Mineral nitrogen pool
+        real :: nLeaf
+        real :: nStem
+        real :: nRoot
+        real :: nOther
+        real :: nLitter
+        real :: nLitterCwd
+        real :: nSoil
+        real :: nMineral                ! nMineral: Mineral nitrogen pool
         ! energy fluxes (W m-2)
-        real, allocatable :: hfls(:)
-        real, allocatable :: hfss(:)
-        real, allocatable :: SWnet(:)
-        real, allocatable :: LWnet(:)                   ! Sensible heat flux; Latent heat flux; Net shortwave radiation; Net longwave radiation
+        real :: hfls
+        real :: hfss
+        real :: SWnet
+        real :: LWnet                   ! Sensible heat flux; Latent heat flux; Net shortwave radiation; Net longwave radiation
         ! water fluxes (kg m-2 s-1)
-        real, allocatable :: ec(:)
-        real, allocatable :: tran(:)
-        real, allocatable :: es(:)                      ! Canopy evaporation; Canopy transpiration; Soil evaporation
-        real, allocatable :: hfsbl(:)                   ! Snow sublimation
-        real, allocatable :: mrro(:)
-        real, allocatable :: mrros(:)
-        real, allocatable :: mrrob(:)                   ! Total runoff; Surface runoff; Subsurface runoff
+        real :: ec
+        real :: tran
+        real :: es                      ! Canopy evaporation; Canopy transpiration; Soil evaporation
+        real :: hfsbl                   ! Snow sublimation
+        real :: mrro
+        real :: mrros
+        real :: mrrob                   ! Total runoff; Surface runoff; Subsurface runoff
         ! other
-        real, allocatable :: mrso(:, :)           ! Kg m-2, soil moisture in each soil layer
-        real, allocatable :: tsl(:, :)            ! K, soil temperature in each soil layer
-        real, allocatable :: tsland(:)                  ! K, surface temperature
-        real, allocatable :: wtd(:)                     ! m, Water table depth
-        real, allocatable :: snd(:)                     ! m, Total snow depth
-        real, allocatable :: lai(:)                     ! m2 m-2, Leaf area index 
+        real :: mrso(nlayers)           ! Kg m-2, soil moisture in each soil layer
+        real :: tsl(nlayers)            ! K, soil temperature in each soil layer
+        real :: tsland                  ! K, surface temperature
+        real :: wtd                     ! m, Water table depth
+        real :: snd                     ! m, Total snow depth
+        real :: lai                     ! m2 m-2, Leaf area index 
     end type outvars_data_type
     type(outvars_data_type) :: outVars_h, outVars_d, outVars_m, outVars_y
-    ! type(outvars_data_type) :: tot_outVars_h, tot_outVars_d, tot_outVars_m, tot_outVars_y
+    type(outvars_data_type), allocatable :: tot_outVars_h(:) 
+    type(outvars_data_type), allocatable :: tot_outVars_d(:)
+    type(outvars_data_type), allocatable :: tot_outVars_m(:)
+    type(outvars_data_type), allocatable :: tot_outVars_y(:)
 
     ! parameters from the namelist file
     type nml_params_data_type
@@ -559,7 +449,9 @@ module datatypes
     end type nml_initValue_data_type
 
 contains
+
     subroutine read_teco_configs()
+    ! read the config file of TECO model, which is used for setting the simulaiton
         implicit none
         integer io
         character(300) :: spec_names_0(10), files_pft_params_0(10)
@@ -581,6 +473,7 @@ contains
     end subroutine read_teco_configs
 
     subroutine read_parameters_nml(param_nml_file, in_params, init_params)
+    ! read the parameter file and the initilized parameters, return in_params and init_params
         implicit none
         character(*), intent(in) :: param_nml_file
         type(nml_params_data_type), intent(inout)    :: in_params
@@ -1001,6 +894,154 @@ contains
         return
     end subroutine initilize_spec
 
+    ! subroutine assign_outVars(outVars, ntime, nspec)
+    !     type(outvars_data_type), intent(inout) :: outVars
+    !     integer, intent(in) :: ntime, nspec
+    !     integer :: itime
+    !     allocate(outVars(ntime))
+    !     do itime = 1, ntime
+    !         allocate(outVars(itime)%allSpec(nspec))
+    !     enddo
+    !     return
+    ! end subroutine assign_outVars
+
+    subroutine init_hourly()
+        implicit none
+        if (do_out_hr) call init_outVars(outVars_h)
+    end subroutine init_hourly
+
+    subroutine init_daily()
+        implicit none
+        if (do_out_day) call init_outVars(outVars_d)
+    end subroutine init_daily
+
+    subroutine init_monthly()
+        implicit none
+        if(do_out_mon) call init_outVars(outVars_m)
+    end subroutine init_monthly
+
+    subroutine init_yearly(vegn)
+        implicit none
+        type(vegn_tile_type), intent(inout) :: vegn
+        integer ipft
+        st%GDD5 = 0.
+        do ipft = 1, vegn%npft
+            vegn%allSp(ipft)%onset = 0
+        enddo 
+        if (do_out_yr) call init_outVars(outVars_y)
+    end subroutine init_yearly
+
+    subroutine init_outVars(outVars)
+        implicit none
+        type(outvars_data_type), intent(inout) :: outVars
+        integer :: npft, ipft
+        outVars%year = 0
+        outVars%doy  = 0
+        outVars%hour = 0
+        if (allocated(outVars%allSpec))then
+            npft = size(outVars%allSpec)
+            do ipft = 1, npft
+                ! carbon fluxes (Kg C m-2 s-1)
+                outVars%allSpec(ipft)%gpp      = 0.
+                outVars%allSpec(ipft)%nee      = 0.
+                outVars%allSpec(ipft)%npp      = 0.
+                outVars%allSpec(ipft)%nppLeaf  = 0.
+                outVars%allSpec(ipft)%nppWood  = 0.
+                outVars%allSpec(ipft)%nppStem  = 0.
+                outVars%allSpec(ipft)%nppRoot  = 0.
+                outVars%allSpec(ipft)%nppOther = 0.    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+                outVars%allSpec(ipft)%ra       = 0.
+                outVars%allSpec(ipft)%raLeaf   = 0.
+                outVars%allSpec(ipft)%raStem   = 0.
+                outVars%allSpec(ipft)%raRoot   = 0.
+                outVars%allSpec(ipft)%raOther  = 0.
+                outVars%allSpec(ipft)%rMaint   = 0.
+                outVars%allSpec(ipft)%rGrowth  = 0.
+                outVars%allSpec(ipft)%nbp      = 0.
+                ! Carbon Pools  (KgC m-2)
+                outVars%allSpec(ipft)%cLeaf    = 0.
+                outVars%allSpec(ipft)%cStem    = 0.
+                outVars%allSpec(ipft)%cRoot    = 0.
+                ! Nitrogen pools (kgN m-2)
+                outVars%allSpec(ipft)%nLeaf    = 0.
+                outVars%allSpec(ipft)%nStem    = 0.
+                outVars%allSpec(ipft)%nRoot    = 0.
+                ! water fluxes (kg m-2 s-1)
+                outVars%allSpec(ipft)%tran     = 0.
+                ! other
+                outVars%allSpec(ipft)%lai      = 0. 
+            enddo
+        endif
+        outVars%gpp              = 0.
+        outVars%nee              = 0.
+        outVars%npp              = 0.
+        outVars%nppLeaf          = 0.
+        outVars%nppWood          = 0.
+        outVars%nppStem          = 0.
+        outVars%nppRoot          = 0.
+        outVars%nppOther         = 0.  
+        outVars%ra               = 0.
+        outVars%raLeaf           = 0.
+        outVars%raStem           = 0.
+        outVars%raRoot           = 0.
+        outVars%raOther          = 0.
+        outVars%rMaint           = 0.
+        outVars%rGrowth          = 0.
+        outVars%rh               = 0.
+        outVars%nbp              = 0.
+        outVars%wetlandCH4       = 0.
+        outVars%wetlandCH4prod   = 0.
+        outVars%wetlandCH4cons   = 0. 
+        ! Carbon Pools  (KgC m-2)
+        outVars%cLeaf            = 0.
+        outVars%cStem            = 0.
+        outVars%cRoot            = 0.
+        outVars%cOther           = 0.
+        outVars%cLitter          = 0.
+        outVars%cLitterCwd       = 0.  
+        outVars%cSoil            = 0.
+        outVars%cSoilLevels(:)   = 0.
+        outVars%cSoilFast        = 0.
+        outVars%cSoilSlow        = 0.
+        outVars%cSoilPassive     = 0. 
+        outVars%CH4(:)           = 0.
+        ! Nitrogen fluxes (kgN m-2 s-1)
+        outVars%fBNF             = 0.
+        outVars%fN2O             = 0.
+        outVars%fNloss           = 0.
+        outVars%fNnetmin         = 0.
+        outVars%fNdep            = 0.  
+        ! Nitrogen pools (kgN m-2)
+        outVars%nLeaf            = 0.
+        outVars%nStem            = 0.
+        outVars%nRoot            = 0.
+        outVars%nOther           = 0.
+        outVars%nLitter          = 0.
+        outVars%nLitterCwd       = 0.
+        outVars%nSoil            = 0.
+        outVars%nMineral         = 0. 
+        ! energy fluxes (W m-2)
+        outVars%hfls             = 0.
+        outVars%hfss             = 0.
+        outVars%SWnet            = 0.
+        outVars%LWnet            = 0.
+        ! water fluxes (kg m-2 s-1)
+        outVars%ec               = 0.
+        outVars%tran             = 0.
+        outVars%es               = 0.   
+        outVars%hfsbl            = 0.  
+        outVars%mrro             = 0.
+        outVars%mrros            = 0.
+        outVars%mrrob            = 0.   
+        ! other
+        outVars%mrso(:)          = 0.  
+        outVars%tsl(:)           = 0.
+        outVars%tsland           = 0.                 
+        outVars%wtd              = 0.           
+        outVars%snd              = 0.           
+        outVars%lai              = 0.
+    end subroutine init_outVars
+
     subroutine get_forcingdata()
         implicit none
         integer STAT, COUNT
@@ -1086,381 +1127,15 @@ contains
         return
     end subroutine ReadLineNumFromFile
 
-    subroutine assign_outVars(ntime, outVars, npft)
+    subroutine deallocate_results(outVars, npft)
         implicit none
-        integer, intent(in) :: ntime, npft
         type(outvars_data_type), intent(inout) :: outVars
+        integer, intent(in) :: npft
         integer :: ipft
-        ! assign the species outVars 
-        allocate(outVars%year(ntime))
-        allocate(outVars%doy(ntime))
-        allocate(outVars%hour(ntime))
-        allocate(outVars%allSpec(npft))
+
         do ipft = 1, npft
-            allocate(outVars%allSpec(ipft)%gpp(ntime))
-            allocate(outVars%allSpec(ipft)%nee(ntime))
-            allocate(outVars%allSpec(ipft)%npp(ntime))
-            allocate(outVars%allSpec(ipft)%nppLeaf(ntime))
-            allocate(outVars%allSpec(ipft)%nppWood(ntime))
-            allocate(outVars%allSpec(ipft)%nppStem(ntime))
-            allocate(outVars%allSpec(ipft)%nppRoot(ntime))
-            allocate(outVars%allSpec(ipft)%nppOther(ntime))    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
-            allocate(outVars%allSpec(ipft)%ra(ntime))
-            allocate(outVars%allSpec(ipft)%raLeaf(ntime))
-            allocate(outVars%allSpec(ipft)%raStem(ntime))
-            allocate(outVars%allSpec(ipft)%raRoot(ntime))
-            allocate(outVars%allSpec(ipft)%raOther(ntime))
-            allocate(outVars%allSpec(ipft)%rMaint(ntime))
-            allocate(outVars%allSpec(ipft)%rGrowth(ntime))
-            allocate(outVars%allSpec(ipft)%nbp(ntime))
-            ! Carbon Pools  (KgC m-2)
-            allocate(outVars%allSpec(ipft)%cLeaf(ntime))
-            allocate(outVars%allSpec(ipft)%cStem(ntime))
-            allocate(outVars%allSpec(ipft)%cRoot(ntime))
-            ! Nitrogen pools (kgN m-2)
-            allocate(outVars%allSpec(ipft)%nLeaf(ntime))
-            allocate(outVars%allSpec(ipft)%nStem(ntime))
-            allocate(outVars%allSpec(ipft)%nRoot(ntime))
-            ! water fluxes (kg m-2 s-1)
-            allocate(outVars%allSpec(ipft)%tran(ntime))
-            ! other
-            allocate(outVars%allSpec(ipft)%lai(ntime)) 
-        enddo 
-        ! assign the site or vegetation results
-        allocate(outVars%gpp(ntime))
-        allocate(outVars%nee(ntime))
-        allocate(outVars%npp(ntime))
-        allocate(outVars%nppLeaf(ntime))
-        allocate(outVars%nppWood(ntime))
-        allocate(outVars%nppStem(ntime))
-        allocate(outVars%nppRoot(ntime))
-        allocate(outVars%nppOther(ntime)) 
-        allocate(outVars%ra(ntime))
-        allocate(outVars%raLeaf(ntime))
-        allocate(outVars%raStem(ntime))
-        allocate(outVars%raRoot(ntime))
-        allocate(outVars%raOther(ntime))
-        allocate(outVars%rMaint(ntime))
-        allocate(outVars%rGrowth(ntime))
-        allocate(outVars%rh(ntime))
-        allocate(outVars%nbp(ntime))
-        allocate(outVars%wetlandCH4(ntime))
-        allocate(outVars%wetlandCH4prod(ntime))
-        allocate(outVars%wetlandCH4cons(ntime))
-        ! Carbon Pools  (KgC m-2)
-        allocate(outVars%cLeaf(ntime))
-        allocate(outVars%cStem(ntime))
-        allocate(outVars%cRoot(ntime))
-        allocate(outVars%cOther(ntime)) 
-        allocate(outVars%cLitter(ntime))
-        allocate(outVars%cLitterCwd(ntime))
-        allocate(outVars%cSoil(ntime))
-        allocate(outVars%cSoilLevels(ntime, nlayers))
-        allocate(outVars%cSoilFast(ntime))
-        allocate(outVars%cSoilSlow(ntime))
-        allocate(outVars%cSoilPassive(ntime))
-        allocate(outVars%CH4(ntime, nlayers))
-        ! Nitrogen fluxes (kgN m-2 s-1)
-        allocate(outVars%fBNF(ntime))
-        allocate(outVars%fN2O(ntime))
-        allocate(outVars%fNloss(ntime))
-        allocate(outVars%fNnetmin(ntime))
-        allocate(outVars%fNdep(ntime))
-        ! Nitrogen pools (kgN m-2)
-        allocate(outVars%nLeaf(ntime))
-        allocate(outVars%nStem(ntime))
-        allocate(outVars%nRoot(ntime))
-        allocate(outVars%nOther(ntime))
-        allocate(outVars%nLitter(ntime))
-        allocate(outVars%nLitterCwd(ntime))
-        allocate(outVars%nSoil(ntime))
-        allocate(outVars%nMineral(ntime))
-        ! energy fluxes (W m-2)
-        allocate(outVars%hfls(ntime))
-        allocate(outVars%hfss(ntime))
-        allocate(outVars%SWnet(ntime))
-        allocate(outVars%LWnet(ntime)) 
-        ! water fluxes (kg m-2 s-1)
-        allocate(outVars%ec(ntime))
-        allocate(outVars%tran(ntime))
-        allocate(outVars%es(ntime))
-        allocate(outVars%hfsbl(ntime)) 
-        allocate(outVars%mrro(ntime))
-        allocate(outVars%mrros(ntime))
-        allocate(outVars%mrrob(ntime))
-        ! other
-        allocate(outVars%mrso(ntime, nlayers))
-        allocate(outVars%tsl(ntime, nlayers))
-        allocate(outVars%tsland(ntime))
-        allocate(outVars%wtd(ntime))
-        allocate(outVars%snd(ntime))
-        allocate(outVars%lai(ntime))
-        return
-    end subroutine assign_outVars
-
-    subroutine init_hourly(itime)
-        implicit none
-        integer, intent(in) :: itime
-        ! type(vegn_tile_type), intent(inout) :: vegn
-        ! integer ipft
-        ! do ipft = 1, vegn%npft
-        !     vegn%allSp(ipft)%onset = 0
-        ! enddo 
-        if (do_out_hr) call init_outVars(outVars_h, itime)
-    end subroutine init_hourly
-
-    subroutine init_daily(itime)
-        implicit none
-        integer, intent(in) :: itime
-        ! type(vegn_tile_type), intent(inout) :: vegn
-        ! integer ipft
-        ! do ipft = 1, vegn%npft
-        !     vegn%allSp(ipft)%onset = 0
-        ! enddo 
-        if (do_out_day) call init_outVars(outVars_d, itime)
-    end subroutine init_daily
-
-    subroutine init_monthly(itime)
-        implicit none
-        integer, intent(in) :: itime
-        if(do_out_mon) call init_outVars(outVars_h, itime)
-    end subroutine init_monthly
-
-    subroutine init_yearly(vegn, itime)
-        implicit none
-        integer, intent(in) :: itime
-        type(vegn_tile_type), intent(inout) :: vegn
-        integer ipft
-        st%GDD5 = 0.
-        do ipft = 1, vegn%npft
-            vegn%allSp(ipft)%onset = 0
-        enddo 
-        if (do_out_yr) call init_outVars(outVars_y, itime)
-    end subroutine init_yearly
-
-    subroutine init_outVars(outVars, itime)
-        implicit none
-        integer, intent(in) :: itime
-        type(outvars_data_type), intent(inout) :: outVars
-        integer :: npft, ipft
-        outVars%year(itime) = 0
-        outVars%doy(itime)  = 0
-        outVars%hour(itime) = 0
-        if (allocated(outVars%allSpec))then
-            npft = size(outVars%allSpec)
-            do ipft = 1, npft
-                ! carbon fluxes (Kg C m-2 s-1)
-                outVars%allSpec(ipft)%gpp(itime)      = 0.
-                outVars%allSpec(ipft)%nee(itime)      = 0.
-                outVars%allSpec(ipft)%npp(itime)      = 0.
-                outVars%allSpec(ipft)%nppLeaf(itime)  = 0.
-                outVars%allSpec(ipft)%nppWood(itime)  = 0.
-                outVars%allSpec(ipft)%nppStem(itime)  = 0.
-                outVars%allSpec(ipft)%nppRoot(itime)  = 0.
-                outVars%allSpec(ipft)%nppOther(itime) = 0.    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
-                outVars%allSpec(ipft)%ra(itime)       = 0.
-                outVars%allSpec(ipft)%raLeaf(itime)   = 0.
-                outVars%allSpec(ipft)%raStem(itime)   = 0.
-                outVars%allSpec(ipft)%raRoot(itime)   = 0.
-                outVars%allSpec(ipft)%raOther(itime)  = 0.
-                outVars%allSpec(ipft)%rMaint(itime)   = 0.
-                outVars%allSpec(ipft)%rGrowth(itime)  = 0.
-                outVars%allSpec(ipft)%nbp(itime)      = 0.
-                ! Carbon Pools  (KgC m-2)
-                outVars%allSpec(ipft)%cLeaf(itime)    = 0.
-                outVars%allSpec(ipft)%cStem(itime)    = 0.
-                outVars%allSpec(ipft)%cRoot(itime)    = 0.
-                ! Nitrogen pools (kgN m-2)
-                outVars%allSpec(ipft)%nLeaf(itime)    = 0.
-                outVars%allSpec(ipft)%nStem(itime)    = 0.
-                outVars%allSpec(ipft)%nRoot(itime)    = 0.
-                ! water fluxes (kg m-2 s-1)
-                outVars%allSpec(ipft)%tran(itime)     = 0.
-                ! other
-                outVars%allSpec(ipft)%lai(itime)      = 0. 
-            enddo
-        endif
-        outVars%gpp(itime)              = 0.
-        outVars%nee(itime)              = 0.
-        outVars%npp(itime)              = 0.
-        outVars%nppLeaf(itime)          = 0.
-        outVars%nppWood(itime)          = 0.
-        outVars%nppStem(itime)          = 0.
-        outVars%nppRoot(itime)          = 0.
-        outVars%nppOther(itime)         = 0.  
-        outVars%ra(itime)               = 0.
-        outVars%raLeaf(itime)           = 0.
-        outVars%raStem(itime)           = 0.
-        outVars%raRoot(itime)           = 0.
-        outVars%raOther(itime)          = 0.
-        outVars%rMaint(itime)           = 0.
-        outVars%rGrowth(itime)          = 0.
-        outVars%rh(itime)               = 0.
-        outVars%nbp(itime)              = 0.
-        outVars%wetlandCH4(itime)       = 0.
-        outVars%wetlandCH4prod(itime)   = 0.
-        outVars%wetlandCH4cons(itime)   = 0. 
-        ! Carbon Pools  (KgC m-2)
-        outVars%cLeaf(itime)            = 0.
-        outVars%cStem(itime)            = 0.
-        outVars%cRoot(itime)            = 0.
-        outVars%cOther(itime)           = 0.
-        outVars%cLitter(itime)          = 0.
-        outVars%cLitterCwd(itime)       = 0.  
-        outVars%cSoil(itime)            = 0.
-        outVars%cSoilLevels(itime,:)      = 0.
-        outVars%cSoilFast(itime)        = 0.
-        outVars%cSoilSlow(itime)        = 0.
-        outVars%cSoilPassive(itime)     = 0. 
-        outVars%CH4(itime,:)              = 0.
-        ! Nitrogen fluxes (kgN m-2 s-1)
-        outVars%fBNF(itime)             = 0.
-        outVars%fN2O(itime)             = 0.
-        outVars%fNloss(itime)           = 0.
-        outVars%fNnetmin(itime)         = 0.
-        outVars%fNdep(itime)            = 0.  
-        ! Nitrogen pools (kgN m-2)
-        outVars%nLeaf(itime)            = 0.
-        outVars%nStem(itime)            = 0.
-        outVars%nRoot(itime)            = 0.
-        outVars%nOther(itime)           = 0.
-        outVars%nLitter(itime)          = 0.
-        outVars%nLitterCwd(itime)       = 0.
-        outVars%nSoil(itime)            = 0.
-        outVars%nMineral(itime)         = 0. 
-        ! energy fluxes (W m-2)
-        outVars%hfls(itime)             = 0.
-        outVars%hfss(itime)             = 0.
-        outVars%SWnet(itime)            = 0.
-        outVars%LWnet(itime)            = 0.
-        ! water fluxes (kg m-2 s-1)
-        outVars%ec(itime)               = 0.
-        outVars%tran(itime)             = 0.
-        outVars%es(itime)               = 0.   
-        outVars%hfsbl(itime)            = 0.  
-        outVars%mrro(itime)             = 0.
-        outVars%mrros(itime)            = 0.
-        outVars%mrrob(itime)            = 0.   
-        ! other
-        outVars%mrso(itime,:)             = 0.  
-        outVars%tsl(itime,:)              = 0.
-        outVars%tsland(itime)           = 0.                 
-        outVars%wtd(itime)              = 0.           
-        outVars%snd(itime)              = 0.           
-        outVars%lai(itime)              = 0.
-    end subroutine init_outVars
-
-    subroutine deallocate_results(outVars)
-        implicit none
-        type(outvars_data_type), intent(inout) :: outVars
-        integer :: ipft, npft
-        if(allocated(outVars%year)) deallocate(outVars%year)
-        if(allocated(outVars%doy))  deallocate(outVars%doy)
-        if(allocated(outVars%hour)) deallocate(outVars%hour)
-        if (allocated(outVars%allSpec))then
-            npft = size(outVars%allSpec)
-            do ipft = 1, npft
-                ! carbon fluxes (Kg C m-2 s-1)
-                if (allocated(outVars%allSpec(ipft)%gpp))      deallocate(outVars%allSpec(ipft)%gpp)
-                if (allocated(outVars%allSpec(ipft)%nee))      deallocate(outVars%allSpec(ipft)%nee)
-                if (allocated(outVars%allSpec(ipft)%npp))      deallocate(outVars%allSpec(ipft)%npp)
-                if (allocated(outVars%allSpec(ipft)%nppLeaf))  deallocate(outVars%allSpec(ipft)%nppLeaf)
-                if (allocated(outVars%allSpec(ipft)%nppWood))  deallocate(outVars%allSpec(ipft)%nppWood)
-                if (allocated(outVars%allSpec(ipft)%nppStem))  deallocate(outVars%allSpec(ipft)%nppStem)
-                if (allocated(outVars%allSpec(ipft)%nppRoot))  deallocate(outVars%allSpec(ipft)%nppRoot)
-                if (allocated(outVars%allSpec(ipft)%nppOther)) deallocate(outVars%allSpec(ipft)%nppOther)
-                if (allocated(outVars%allSpec(ipft)%ra))       deallocate(outVars%allSpec(ipft)%ra)
-                if (allocated(outVars%allSpec(ipft)%raLeaf))   deallocate(outVars%allSpec(ipft)%raLeaf)
-                if (allocated(outVars%allSpec(ipft)%raStem))   deallocate(outVars%allSpec(ipft)%raStem)
-                if (allocated(outVars%allSpec(ipft)%raRoot))   deallocate(outVars%allSpec(ipft)%raRoot)
-                if (allocated(outVars%allSpec(ipft)%raOther))  deallocate(outVars%allSpec(ipft)%raOther)
-                if (allocated(outVars%allSpec(ipft)%rMaint))   deallocate(outVars%allSpec(ipft)%rMaint)
-                if (allocated(outVars%allSpec(ipft)%rGrowth))  deallocate(outVars%allSpec(ipft)%rGrowth)
-                if (allocated(outVars%allSpec(ipft)%nbp))      deallocate(outVars%allSpec(ipft)%nbp)
-                ! Carbon Pools  (KgC m-2)
-                if (allocated(outVars%allSpec(ipft)%cLeaf))    deallocate(outVars%allSpec(ipft)%cLeaf)
-                if (allocated(outVars%allSpec(ipft)%cStem))    deallocate(outVars%allSpec(ipft)%cStem)
-                if (allocated(outVars%allSpec(ipft)%cRoot))    deallocate(outVars%allSpec(ipft)%cRoot)
-                ! Nitrogen pools (kgN m-2)
-                if (allocated(outVars%allSpec(ipft)%nLeaf))    deallocate(outVars%allSpec(ipft)%nLeaf)
-                if (allocated(outVars%allSpec(ipft)%nStem))    deallocate(outVars%allSpec(ipft)%nStem)
-                if (allocated(outVars%allSpec(ipft)%nRoot))    deallocate(outVars%allSpec(ipft)%nRoot)
-                ! water fluxes (kg m-2 s-1)
-                if (allocated(outVars%allSpec(ipft)%tran))     deallocate(outVars%allSpec(ipft)%tran)
-                ! other
-                if (allocated(outVars%allSpec(ipft)%lai))      deallocate(outVars%allSpec(ipft)%lai)
-            enddo
-            deallocate(outVars%allSpec)
-        endif              
-        ! others
-        if (allocated(outVars%gpp))            deallocate(outVars%gpp)
-        if (allocated(outVars%nee))            deallocate(outVars%nee)
-        if (allocated(outVars%npp))            deallocate(outVars%npp)
-        if (allocated(outVars%nppLeaf))        deallocate(outVars%nppLeaf)
-        if (allocated(outVars%nppWood))        deallocate(outVars%nppWood)
-        if (allocated(outVars%nppStem))        deallocate(outVars%nppStem)
-        if (allocated(outVars%nppRoot))        deallocate(outVars%nppRoot)
-        if (allocated(outVars%nppOther))       deallocate(outVars%nppOther)           
-        if (allocated(outVars%ra))             deallocate(outVars%ra)
-        if (allocated(outVars%raLeaf))         deallocate(outVars%raLeaf)
-        if (allocated(outVars%raStem))         deallocate(outVars%raStem)
-        if (allocated(outVars%raRoot))         deallocate(outVars%raRoot)
-        if (allocated(outVars%raOther))        deallocate(outVars%raOther)
-        if (allocated(outVars%rMaint))         deallocate(outVars%rMaint)
-        if (allocated(outVars%rGrowth))        deallocate(outVars%rGrowth)           
-        if (allocated(outVars%rh))             deallocate(outVars%rh)
-        if (allocated(outVars%nbp))            deallocate(outVars%nbp)                
-        if (allocated(outVars%wetlandCH4))     deallocate(outVars%wetlandCH4)
-        if (allocated(outVars%wetlandCH4prod)) deallocate(outVars%wetlandCH4prod)
-        if (allocated(outVars%wetlandCH4cons)) deallocate(outVars%wetlandCH4cons)  
-        ! Carbon Pools  (KgC m-2)
-        if (allocated(outVars%cLeaf))        deallocate(outVars%cLeaf)
-        if (allocated(outVars%cStem))        deallocate(outVars%cStem)
-        if (allocated(outVars%cRoot))        deallocate(outVars%cRoot)
-        if (allocated(outVars%cOther))       deallocate(outVars%cOther)
-        if (allocated(outVars%cLitter))      deallocate(outVars%cLitter)
-        if (allocated(outVars%cLitterCwd))   deallocate(outVars%cLitterCwd)
-        if (allocated(outVars%cSoil))        deallocate(outVars%cSoil)
-        if (allocated(outVars%cSoilLevels))  deallocate(outVars%cSoilLevels)
-        if (allocated(outVars%cSoilFast))    deallocate(outVars%cSoilFast)
-        if (allocated(outVars%cSoilSlow))    deallocate(outVars%cSoilSlow)
-        if (allocated(outVars%cSoilPassive)) deallocate(outVars%cSoilPassive)
-        if (allocated(outVars%CH4))          deallocate(outVars%CH4)
-        ! Nitrogen fluxes (kgN m-2 s-1)
-        if (allocated(outVars%fBNF))         deallocate(outVars%fBNF)
-        if (allocated(outVars%fN2O))         deallocate(outVars%fN2O)
-        if (allocated(outVars%fNloss))       deallocate(outVars%fNloss)
-        if (allocated(outVars%fNnetmin))     deallocate(outVars%fNnetmin)
-        if (allocated(outVars%fNdep))        deallocate(outVars%fNdep)
-        ! Nitrogen pools (kgN m-2)
-        if (allocated(outVars%nLeaf))        deallocate(outVars%nLeaf)
-        if (allocated(outVars%nStem))        deallocate(outVars%nStem)
-        if (allocated(outVars%nRoot))        deallocate(outVars%nRoot)
-        if (allocated(outVars%nOther))       deallocate(outVars%nOther)
-        if (allocated(outVars%nLitter))      deallocate(outVars%nLitter)
-        if (allocated(outVars%nLitterCwd))   deallocate(outVars%nLitterCwd)
-        if (allocated(outVars%nSoil))        deallocate(outVars%nSoil)
-        if (allocated(outVars%nMineral))     deallocate(outVars%nMineral)
-        ! energy fluxes (W m-2)
-        if (allocated(outVars%hfls))         deallocate(outVars%hfls)
-        if (allocated(outVars%hfss))         deallocate(outVars%hfss)
-        if (allocated(outVars%SWnet))        deallocate(outVars%SWnet)
-        if (allocated(outVars%LWnet))        deallocate(outVars%LWnet)
-        ! water fluxes (kg m-2 s-1)
-        if (allocated(outVars%ec))           deallocate(outVars%ec)
-        if (allocated(outVars%tran))         deallocate(outVars%tran)
-        if (allocated(outVars%es))           deallocate(outVars%es)
-        if (allocated(outVars%hfsbl))        deallocate(outVars%hfsbl)
-        if (allocated(outVars%mrro))         deallocate(outVars%mrro)
-        if (allocated(outVars%mrros))        deallocate(outVars%mrros)
-        if (allocated(outVars%mrrob))        deallocate(outVars%mrrob)
-        ! other
-        if (allocated(outVars%mrso))         deallocate(outVars%mrso)      
-        if (allocated(outVars%tsl))          deallocate(outVars%tsl)       
-        if (allocated(outVars%tsland))       deallocate(outVars%tsland) 
-        if (allocated(outVars%wtd))          deallocate(outVars%wtd)
-        if (allocated(outVars%snd))          deallocate(outVars%snd)
-        if (allocated(outVars%lai))          deallocate(outVars%lai)
+            if(allocated(outVars%allSpec)) deallocate(outVars%allSpec)
+        enddo
     end subroutine deallocate_results
 
     subroutine deallocate_date_type()

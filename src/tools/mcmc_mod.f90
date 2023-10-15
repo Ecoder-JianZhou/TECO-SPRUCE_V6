@@ -857,7 +857,7 @@ module mcmc_mod
                     vars4MCMC%gpp_d%mdData(mc_itime_gpp_d, 1) = mc_iyear
                     vars4MCMC%gpp_d%mdData(mc_itime_gpp_d, 2) = mc_iday
                     vars4MCMC%gpp_d%mdData(mc_itime_gpp_d, 3) = mc_ihour
-                    vars4MCMC%gpp_d%mdData(mc_itime_gpp_d, 4) = outVars_d%gpp(nDay)*86400000
+                    vars4MCMC%gpp_d%mdData(mc_itime_gpp_d, 4) = outVars_d%gpp*86400000
                     mc_itime_gpp_d = mc_itime_gpp_d + 1
                 endif
             endif
@@ -875,7 +875,7 @@ module mcmc_mod
                     vars4MCMC%nee_d%mdData(mc_itime_nee_d, 1) = mc_iyear
                     vars4MCMC%nee_d%mdData(mc_itime_nee_d, 2) = mc_iday
                     vars4MCMC%nee_d%mdData(mc_itime_nee_d, 3) = mc_ihour
-                    vars4MCMC%nee_d%mdData(mc_itime_nee_d, 4) = outVars_d%nee(nDay)*86400000    ! the same in TECO model
+                    vars4MCMC%nee_d%mdData(mc_itime_nee_d, 4) = outVars_d%nee*86400000    ! the same in TECO model
                     mc_itime_nee_d = mc_itime_nee_d + 1
                 endif
             endif
@@ -894,7 +894,7 @@ module mcmc_mod
                     vars4MCMC%reco_d%mdData(mc_itime_reco_d, 1) = mc_iyear
                     vars4MCMC%reco_d%mdData(mc_itime_reco_d, 2) = mc_iday
                     vars4MCMC%reco_d%mdData(mc_itime_reco_d, 3) = mc_ihour
-                    vars4MCMC%reco_d%mdData(mc_itime_reco_d, 4) = (outVars_d%ra(nDay)+outVars_d%rh(nDay))*86400000
+                    vars4MCMC%reco_d%mdData(mc_itime_reco_d, 4) = (outVars_d%ra+outVars_d%rh)*86400000
                     mc_itime_reco_d = mc_itime_reco_d + 1
                 endif
             endif
@@ -919,7 +919,7 @@ module mcmc_mod
                     vars4MCMC%gpp_h%mdData(mc_itime_gpp_h, 1) = mc_iyear
                     vars4MCMC%gpp_h%mdData(mc_itime_gpp_h, 2) = mc_iday
                     vars4MCMC%gpp_h%mdData(mc_itime_gpp_h, 3) = mc_ihour
-                    vars4MCMC%gpp_h%mdData(mc_itime_gpp_h, 4) = outVars_h%gpp(nHr)*3600000
+                    vars4MCMC%gpp_h%mdData(mc_itime_gpp_h, 4) = outVars_h%gpp*3600000
                     mc_itime_gpp_h = mc_itime_gpp_h + 1
                 endif
             endif
@@ -937,7 +937,7 @@ module mcmc_mod
                     vars4MCMC%nee_h%mdData(mc_itime_nee_h, 1) = mc_iyear
                     vars4MCMC%nee_h%mdData(mc_itime_nee_h, 2) = mc_iday
                     vars4MCMC%nee_h%mdData(mc_itime_nee_h, 3) = mc_ihour
-                    vars4MCMC%nee_h%mdData(mc_itime_nee_h, 4) = outVars_h%nee(nHr)*3600000
+                    vars4MCMC%nee_h%mdData(mc_itime_nee_h, 4) = outVars_h%nee*3600000
                     mc_itime_nee_h = mc_itime_nee_h + 1
                 endif
             endif
@@ -956,7 +956,7 @@ module mcmc_mod
                     vars4MCMC%reco_h%mdData(mc_itime_reco_h, 1) = mc_iyear
                     vars4MCMC%reco_h%mdData(mc_itime_reco_h, 2) = mc_iday
                     vars4MCMC%reco_h%mdData(mc_itime_reco_h, 3) = mc_ihour
-                    vars4MCMC%reco_h%mdData(mc_itime_reco_h, 4) = (outVars_h%rh(nHr) + outVars_h%ra(nHr))*3600000
+                    vars4MCMC%reco_h%mdData(mc_itime_reco_h, 4) = (outVars_h%rh + outVars_h%ra)*3600000
                     mc_itime_reco_h = mc_itime_reco_h + 1
                 endif
             endif
@@ -975,7 +975,7 @@ module mcmc_mod
                     vars4MCMC%ch4_h%mdData(mc_itime_ch4_h, 1) = mc_iyear
                     vars4MCMC%ch4_h%mdData(mc_itime_ch4_h, 2) = mc_iday
                     vars4MCMC%ch4_h%mdData(mc_itime_ch4_h, 3) = mc_ihour
-                    vars4MCMC%ch4_h%mdData(mc_itime_ch4_h, 4) = sum(outVars_h%CH4(nHr,:))*3600000
+                    vars4MCMC%ch4_h%mdData(mc_itime_ch4_h, 4) = sum(outVars_h%CH4(:))*3600000
                     mc_itime_ch4_h = mc_itime_ch4_h + 1
                 endif
             endif
@@ -994,7 +994,7 @@ module mcmc_mod
                     vars4MCMC%cleaf%mdData(mc_itime_cleaf, 1) = mc_iyear
                     vars4MCMC%cleaf%mdData(mc_itime_cleaf, 2) = mc_iday
                     vars4MCMC%cleaf%mdData(mc_itime_cleaf, 3) = mc_ihour
-                    vars4MCMC%cleaf%mdData(mc_itime_cleaf, 4) = outVars_h%cLeaf(nHr) 
+                    vars4MCMC%cleaf%mdData(mc_itime_cleaf, 4) = outVars_h%cLeaf
                     mc_itime_cleaf = mc_itime_cleaf + 1
                 endif
             endif
@@ -1012,7 +1012,7 @@ module mcmc_mod
                     vars4MCMC%cwood%mdData(mc_itime_cwood, 1) = mc_iyear
                     vars4MCMC%cwood%mdData(mc_itime_cwood, 2) = mc_iday
                     vars4MCMC%cwood%mdData(mc_itime_cwood, 3) = mc_ihour
-                    vars4MCMC%cwood%mdData(mc_itime_cwood, 4) = outVars_h%cStem(nHr)
+                    vars4MCMC%cwood%mdData(mc_itime_cwood, 4) = outVars_h%cStem
                     mc_itime_cwood = mc_itime_cwood + 1
                 endif
             endif
@@ -1035,7 +1035,7 @@ module mcmc_mod
                     vars4MCMC%bnpp_y%mdData(mc_itime_bnpp_y, 2) = mc_iday
                     vars4MCMC%bnpp_y%mdData(mc_itime_bnpp_y, 3) = mc_ihour
                     vars4MCMC%bnpp_y%mdData(mc_itime_bnpp_y, 4) = &
-                        outVars_y%allSpec(ipft)%nppRoot(nYr)*3600000*365*24
+                        outVars_y%allSpec(ipft)%nppRoot*3600000*365*24
                     mc_itime_bnpp_y = mc_itime_bnpp_y + 1
                 endif
             endif
@@ -1061,13 +1061,13 @@ module mcmc_mod
                         vars4MCMC%spec_vars(ipft)%anpp_y%mdData(mc_itime_anpp_y, 3) = mc_ihour
                         if (ipft == 3)then ! shagnum
                             vars4MCMC%spec_vars(ipft)%anpp_y%mdData(mc_itime_anpp_y, 4) = &
-                                (outVars_y%allSpec(ipft)%nppLeaf(nYr) + &
-                                outVars_y%allSpec(ipft)%nppStem(nYr) + &
-                                outVars_y%allSpec(ipft)%nppRoot(nYr))*3600000*365*24
+                                (outVars_y%allSpec(ipft)%nppLeaf + &
+                                outVars_y%allSpec(ipft)%nppStem + &
+                                outVars_y%allSpec(ipft)%nppRoot)*3600000*365*24
                         else
                             vars4MCMC%spec_vars(ipft)%anpp_y%mdData(mc_itime_anpp_y, 4) = &
-                                (outVars_y%allSpec(ipft)%nppLeaf(nYr) + &
-                                outVars_y%allSpec(ipft)%nppStem(nYr))*3600000*365*24
+                                (outVars_y%allSpec(ipft)%nppLeaf + &
+                                outVars_y%allSpec(ipft)%nppStem)*3600000*365*24
                         endif
                         mc_itime_anpp_y = mc_itime_anpp_y + 1
                     endif
@@ -1087,7 +1087,7 @@ module mcmc_mod
                         vars4MCMC%spec_vars(ipft)%lai_h%mdData(mc_itime_lai_h, 1) = mc_iyear
                         vars4MCMC%spec_vars(ipft)%lai_h%mdData(mc_itime_lai_h, 2) = mc_iday
                         vars4MCMC%spec_vars(ipft)%lai_h%mdData(mc_itime_lai_h, 3) = mc_ihour
-                        vars4MCMC%spec_vars(ipft)%lai_h%mdData(mc_itime_lai_h, 4) = outVars_h%allSpec(ipft)%lai(nHr)
+                        vars4MCMC%spec_vars(ipft)%lai_h%mdData(mc_itime_lai_h, 4) = outVars_h%allSpec(ipft)%lai
                         mc_itime_lai_h = mc_itime_lai_h + 1
                     endif
                 endif

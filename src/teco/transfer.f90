@@ -15,7 +15,7 @@ module transfer
         real Q10h(5)                              
         real CNmin,CNmax,NSNmax,NSNmin              !,NSN
         real CN_foliage
-        real N_demand,N_immob,N_imm(5),Nfix0        ! ,N_deficit,N_fixation
+        real N_immob,N_imm(5),Nfix0        ! ,N_deficit,N_fixation
         ! real N_transfer!,N_loss                      ! ,N_miner,N_uptake,N_deposit,N_leach,N_vol
         real Qroot0,Cfix0                           ! alphaN,
         real Scalar_N_flow,Scalar_N_T

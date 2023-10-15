@@ -4,15 +4,18 @@ module driver
     use vegetation
     use soil
     use transfer
-    use update_and_summary
     use mcmc_mod
+    use io_mod
 
     implicit none
+    integer :: unit_h, unit_d, unit_m, unit_y
+    logical :: do_out_csv
 
     contains
-    subroutine teco_simu(vegn)
+    subroutine teco_simu(vegn, do_out_csv_0)
         implicit none
         type(vegn_tile_type), intent(inout) :: vegn
+        logical, intent(in) :: do_out_csv_0
         integer year0, first_year                               ! year0: record the current year to judge whether a new year
         real    Difference                                      ! GPP-Rauto-NPP. Jian: no sure whether for balance? 
         ! real    RaLeaf,RaStem,RaRoot                            ! for summary the automatic respiration of leaf, stem, root
@@ -22,16 +25,48 @@ module driver
         ! real    ETh, Th, Eh                                     ! record hourly ET, transp, evap. Jian: why not use original variable?
         ! real    INTh,ROh,DRAINh,LEh,SHh                         ! 
         ! real    VPDh, LWH
-        real    esat1, eairP
+        real    :: esat1, eairP
         integer :: iclim, iyear, iday, ihour
         integer :: iTotHourly, iTotDaily, iTotMonthly, iTotYearly
         integer :: daysOfyear, daysOfmonth(12), hoursOfYear, hoursOfmonth
-        integer :: ipft
+        integer :: ipft, iostat
         real    :: snow_depth_e, RH, radsol
+        character(len=:), allocatable :: csv_fileName
+        character(2000) :: header_csv
 
         ! Jian: start the cycle of the forcing data
         first_year = forcing(1)%year
         ! initilize the output 
+        do_out_csv = do_out_csv_0
+        if(do_out_csv) then
+            allocate(character(len=200+len(outDir_csv)) :: csv_fileName)
+            call def_header(header_csv)
+            if(do_out_hr) then
+                unit_h = 3987
+                call def_csv_fileName(outDir_csv, "Hourly", csv_fileName)
+                open(newunit=unit_h, file=csv_fileName, status='replace', action='write', iostat=iostat)
+                write(unit_h, *) adjustl(trim(header_csv))
+            endif
+            if(do_out_day)then
+                unit_d = 3988
+                call def_csv_fileName(outDir_csv, "Daily", csv_fileName)
+                open(newunit=unit_d, file=csv_fileName, status='replace', action='write', iostat=iostat)
+                write(unit_d, *) adjustl(trim(header_csv))
+            endif
+            if(do_out_mon) then
+                unit_m = 3989
+                call def_csv_fileName(outDir_csv, "Monthly", csv_fileName)
+                open(newunit=unit_m, file=csv_fileName, status='replace', action='write', iostat=iostat)
+                write(unit_m, *) adjustl(trim(header_csv))
+            endif
+            if(do_out_yr)then
+                unit_y = 3990
+                call def_csv_fileName(outDir_csv, "Yearly", csv_fileName)
+                open(newunit=unit_y, file=csv_fileName, status='replace', action='write', iostat=iostat)
+                write(unit_y, *) adjustl(trim(header_csv))
+            endif
+            deallocate(csv_fileName)
+        endif
         
         do iclim = 1, nforcing 
             if (iclim .eq. 1) then
@@ -44,10 +79,8 @@ module driver
             iyear = forcing(iclim)%year                      ! force%year
             iday  = forcing(iclim)%doy                    
             ihour = forcing(iclim)%hour
-            ! if (iyear .eq. 2016 .and. iday .eq. 1) stop
-            ! if (iday .eq. 230) stop
             ! if it is a new year
-            if ((iday .eq. 1) .and. (ihour .eq. 0)) call init_yearly(vegn, iTotYearly)
+            if ((iday .eq. 1) .and. (ihour .eq. 0)) call init_yearly(vegn)
             if (do_simu .and. (iday .eq. 1) .and. (ihour .eq. 0)) write(*,*)iyear
             if (do_spruce) then
                 if ((iyear .eq. 1974) .and. (iday .eq. 1) .and. (ihour .eq. 0))then
@@ -97,6 +130,8 @@ module driver
                         daysOfyear, daysOfmonth, hoursOfYear, hoursOfmonth, iTotMonthly)
             endif
 
+            call update_summary_monthly(iday, ihour, daysOfmonth, iTotMonthly)
+
             ! initialize the daily variables to run hourly simulaiton.
             if (ihour .eq. 0) then
                 ! a new day simulation.
@@ -114,7 +149,7 @@ module driver
                     vegn%allSp(ipft)%NSCmax  = 0.05*(vegn%allSp(ipft)%StemSap+vegn%allSp(ipft)%RootSap+vegn%allSp(ipft)%QC(1))          ! Jian: update the NSCmax each step? and fixed NSCmin  = 5.? 
                 enddo
                 if(st%Ta.gt.5.0) st%GDD5 = st%GDD5+st%Ta
-                call init_daily(iTotDaily)                                 ! Jian: initilize the daily data.
+                call init_daily()                                 ! Jian: initilize the daily data.
             endif
 
             ! forcing data --------------------------------------------------------------------------------
@@ -269,27 +304,36 @@ module driver
             st%NEE     = vegn%Rauto+st%Rhetero - vegn%GPP
             
 
-            call updateHourly(vegn, iclim, iyear, iday, ihour)    ! hourly simulation
-            ! print *, "test", vegn%allSp(1)%gpp, st%QC(4:8), vegn%LAI
-            
-            ! stop
-            call updateDaily(vegn, iTotDaily, iyear, iday, ihour)
-            ! write(*,*) outVars_d%cLeaf(iTotDaily), 24, iTotDaily, st%QC(1)
-            ! print *, "outVar: ", outVars_d%gpp, outVars_h%gpp
-            call updateMonthly(vegn, iTotMonthly, hoursOfmonth, iyear, iday, ihour)
-            call updateYearly(vegn, iTotYearly, hoursOfYear, iyear, iday, ihour)
-            ! call init_hourly(iclim)
-            if (ihour .eq. 23) then
-                ! call init_daily()
-                ! print*,iTotDaily, outvars_d%allSpec(1)%gpp(iTotDaily)
-                iTotDaily = iTotDaily + 1 
-            end if
-            
+            ! call updateHourly(vegn, iclim, iyear, iday, ihour)    ! hourly simulation
+            call init_hourly()
+            call updateOutVars(vegn, outvars_h, 1, iyear, iday, ihour)
+            if(do_out_csv) then
+                if(do_out_hr) call write_data_csv(unit_h, outVars_h)
+            endif
+
+            ! call updateDaily(vegn, iTotDaily, iyear, iday, ihour)
+            call updateOutVars(vegn, outvars_d, 24, iyear, iday, ihour)
+            ! call updateMonthly(vegn, iTotMonthly, hoursOfmonth, iyear, iday, ihour)
+            call updateOutVars(vegn, outvars_m, hoursOfmonth, iyear, iday, ihour)
+            ! call updateYearly(vegn, iTotYearly, hoursOfYear, iyear, iday, ihour)
+            call updateOutVars(vegn, outvars_y, hoursOfYear, iyear, iday, ihour)
+
             if (do_mcmc) call GetSimuData(iyear, iday, ihour, vegn, iclim, iTotDaily, iTotMonthly, iTotYearly)
+
+            
+            if (ihour .eq. 23) then
+                if(do_out_csv) then 
+                    if(do_out_day) call write_data_csv(unit_d, outVars_d)
+                endif
+                iTotDaily = iTotDaily + 1 
+            endif
                  
             if (iclim < nforcing)then
                 if (forcing(iclim+1)%year>iyear) then            
                     year0        = iyear                      ! update the record of year (year0)
+                    if(do_out_csv) then 
+                        if(do_out_yr) call write_data_csv(unit_y, outVars_y)
+                    endif
                     iTotYearly   = iTotYearly + 1
                     do ipft = 1, vegn%npft
                         vegn%allSp(ipft)%storage      = vegn%allSp(ipft)%accumulation
@@ -300,6 +344,9 @@ module driver
                 endif
             else
                 year0        = iyear                          ! update the record of year (year0)
+                if(do_out_csv) then
+                    if(do_out_yr) call write_data_csv(unit_y, outVars_y)
+                endif
                 do ipft = 1, vegn%npft
                     vegn%allSp(ipft)%storage      = vegn%allSp(ipft)%accumulation
                     vegn%allSp(ipft)%stor_use     = vegn%allSp(ipft)%Storage/times_storage_use
@@ -308,6 +355,12 @@ module driver
                 enddo
             endif
         enddo
+        if(do_out_csv)then
+            if(do_out_hr)  close(unit_h)
+            if(do_out_day) close(unit_d)
+            if(do_out_mon) close(unit_m)
+            if(do_out_yr)  close(unit_y)
+        endif
     end subroutine teco_simu
 
     subroutine isLeap_update_daysOfyear(iyear, daysOfyear)    
@@ -347,62 +400,62 @@ module driver
         ! January:
         if (iday .eq. 1)then 
             hoursOfmonth = (daysOfmonth(1)-0)*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         ! Feburay:
         if (iday .eq. daysOfmonth(1)+1)then
             hoursOfmonth = (daysOfmonth(2)-daysOfmonth(1))*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         ! March
         if (iday .eq. daysOfmonth(2)+1)then
             hoursOfmonth = (daysOfmonth(3)-daysOfmonth(2))*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         ! April
         if (iday .eq. daysOfmonth(3)+1)then
             hoursOfmonth = (daysOfmonth(4)-daysOfmonth(3))*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         ! May
         if (iday .eq. daysOfmonth(4)+1)then
             hoursOfmonth = (daysOfmonth(5)-daysOfmonth(4))*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         ! June
         if (iday .eq. daysOfmonth(5)+1)then
             hoursOfmonth = (daysOfmonth(6)-daysOfmonth(5))*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         ! July
         if(iday .eq. daysOfmonth(6)+1)then
             hoursOfmonth = (daysOfmonth(7)-daysOfmonth(6))*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         ! Auguest
         if(iday .eq. daysOfmonth(7)+1)then
             hoursOfmonth = (daysOfmonth(8)-daysOfmonth(7))*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         ! Septemble
         if(iday .eq. daysOfmonth(8)+1)then
             hoursOfmonth = (daysOfmonth(9)-daysOfmonth(8))*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         ! October
         if(iday .eq. daysOfmonth(9)+1)then
             hoursOfmonth = (daysOfmonth(10)-daysOfmonth(9))*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         ! November
         if(iday .eq. daysOfmonth(10)+1)then
             hoursOfmonth = (daysOfmonth(11)-daysOfmonth(10))*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         ! December
         if(iday .eq. daysOfmonth(11)+1)then
             hoursOfmonth = (daysOfmonth(12)-daysOfmonth(11))*24
-            if (ihour .eq. 0) call init_monthly(iTotMonthly)
+            if (ihour .eq. 0) call init_monthly()
         endif
         return
     end subroutine update_hoursOfYear_daysOfmonth_initMonthly
@@ -412,18 +465,78 @@ module driver
         integer, intent(in) :: iday, ihour, daysOfmonth(12)
         integer, intent(inout) :: iTotMonthly
         ! January
-        if ((iday .eq. daysOfmonth(1))  .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
-        if ((iday .eq. daysOfmonth(2))  .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
-        if ((iday .eq. daysOfmonth(3))  .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
-        if ((iday .eq. daysOfmonth(4))  .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
-        if ((iday .eq. daysOfmonth(5))  .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
-        if ((iday .eq. daysOfmonth(6))  .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
-        if ((iday .eq. daysOfmonth(7))  .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
-        if ((iday .eq. daysOfmonth(8))  .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
-        if ((iday .eq. daysOfmonth(9))  .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
-        if ((iday .eq. daysOfmonth(10)) .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
-        if ((iday .eq. daysOfmonth(11)) .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
-        if ((iday .eq. daysOfmonth(12)) .and. (ihour .eq. 23)) iTotMonthly = iTotMonthly + 1
+        if ((iday .eq. daysOfmonth(1))  .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
+        if ((iday .eq. daysOfmonth(2))  .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
+        if ((iday .eq. daysOfmonth(3))  .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
+        if ((iday .eq. daysOfmonth(4))  .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
+        if ((iday .eq. daysOfmonth(5))  .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
+        if ((iday .eq. daysOfmonth(6))  .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
+        if ((iday .eq. daysOfmonth(7))  .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
+        if ((iday .eq. daysOfmonth(8))  .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
+        if ((iday .eq. daysOfmonth(9))  .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
+        if ((iday .eq. daysOfmonth(10)) .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
+        if ((iday .eq. daysOfmonth(11)) .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
+        if ((iday .eq. daysOfmonth(12)) .and. (ihour .eq. 23)) then
+            if(do_out_csv) then
+                if(do_out_mon) call write_data_csv(unit_m, outVars_m)
+            endif
+            iTotMonthly = iTotMonthly + 1
+        endif
     end subroutine update_summary_monthly
     
 end module driver

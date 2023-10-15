@@ -287,82 +287,82 @@ contains
         return
     end subroutine select_mcmc_simu_outputs
 
-    subroutine mcmc_update_outputs(upgraded, dataType, simu_outputs)
-        implicit none
-        integer, intent(in) :: upgraded
-        type(mcmc_outVars_type), intent(inout)   :: dataType
-        type(outvars_data_type), intent(in) :: simu_outputs
+    ! subroutine mcmc_update_outputs(upgraded, dataType, simu_outputs)
+    !     implicit none
+    !     integer, intent(in) :: upgraded
+    !     type(mcmc_outVars_type), intent(inout)   :: dataType
+    !     type(outvars_data_type), intent(in) :: simu_outputs
 
-        dataType%gpp(upgraded, :)            = simu_outputs%gpp    
-        dataType%nee(upgraded, :)            = simu_outputs%nee
-        dataType%npp(upgraded, :)            = simu_outputs%npp
-        dataType%nppLeaf(upgraded, :)        = simu_outputs%nppLeaf
-        dataType%nppWood(upgraded, :)        = simu_outputs%nppWood
-        dataType%nppStem(upgraded, :)        = simu_outputs%nppStem
-        dataType%nppRoot(upgraded, :)        = simu_outputs%nppRoot
-        dataType%nppOther(upgraded, :)       = simu_outputs%nppOther
-        dataType%ra(upgraded, :)             = simu_outputs%ra
-        dataType%raLeaf(upgraded, :)         = simu_outputs%raLeaf
-        dataType%raStem(upgraded, :)         = simu_outputs%raStem
-        dataType%raRoot(upgraded, :)         = simu_outputs%raRoot
-        dataType%raOther(upgraded, :)        = simu_outputs%raOther
-        dataType%rMaint(upgraded, :)         = simu_outputs%rMaint
-        dataType%rGrowth(upgraded, :)        = simu_outputs%rGrowth
-        dataType%rh(upgraded, :)             = simu_outputs%rh
-        dataType%nbp(upgraded, :)            = simu_outputs%nbp
-        dataType%wetlandCH4(upgraded, :)     = simu_outputs%wetlandCH4
-        dataType%wetlandCH4prod(upgraded, :) = simu_outputs%wetlandCH4prod
-        dataType%wetlandCH4cons(upgraded, :) = simu_outputs%wetlandCH4cons
-        ! Carbon Pools  (KgC m-2)
-        dataType%cLeaf(upgraded, :)          = simu_outputs%cLeaf
-        dataType%cStem(upgraded, :)          = simu_outputs%cStem
-        dataType%cRoot(upgraded, :)          = simu_outputs%cRoot
-        dataType%cOther(upgraded, :)         = simu_outputs%cOther
-        dataType%cLitter(upgraded, :)        = simu_outputs%cLitter
-        dataType%cLitterCwd(upgraded, :)     = simu_outputs%cLitterCwd
-        dataType%cSoil(upgraded, :)          = simu_outputs%cSoil
-        dataType%cSoilLevels(upgraded, :, :) = simu_outputs%cSoilLevels
-        dataType%cSoilFast(upgraded, :)      = simu_outputs%cSoilFast
-        dataType%cSoilSlow(upgraded, :)      = simu_outputs%cSoilSlow
-        dataType%cSoilPassive(upgraded, :)   = simu_outputs%cSoilPassive
-        dataType%CH4(upgraded, :, :)         = simu_outputs%CH4
-        ! Nitrogen fluxes (kgN m-2 s-1)
-        dataType%fBNF(upgraded, :)           = simu_outputs%fBNF
-        dataType%fN2O(upgraded, :)           = simu_outputs%fN2O
-        dataType%fNloss(upgraded, :)         = simu_outputs%fNloss
-        dataType%fNnetmin(upgraded, :)       = simu_outputs%fNnetmin
-        dataType%fNdep(upgraded, :)          = simu_outputs% fNdep
-        ! Nitrogen pools (kgN m-2)
-        dataType%nLeaf(upgraded, :)          = simu_outputs%nLeaf
-        dataType%nStem(upgraded, :)          = simu_outputs%nStem
-        dataType%nRoot(upgraded, :)          = simu_outputs%nRoot
-        dataType%nOther(upgraded, :)         = simu_outputs%nOther
-        dataType%nLitter(upgraded, :)        = simu_outputs%nLitter
-        dataType%nLitterCwd(upgraded, :)     = simu_outputs%nLitterCwd
-        dataType%nSoil(upgraded, :)          = simu_outputs%nSoil
-        dataType%nMineral(upgraded, :)       = simu_outputs%nMineral
-        ! energy fluxes (W m-2)
-        dataType%hfls(upgraded, :)           = simu_outputs%hfls
-        dataType%hfss(upgraded, :)           = simu_outputs%hfss
-        dataType%SWnet(upgraded, :)          = simu_outputs%SWnet
-        dataType%LWnet(upgraded, :)          = simu_outputs%LWnet
-        ! water fluxes (kg m-2 s-1)
-        dataType%ec(upgraded, :)             = simu_outputs%ec
-        dataType%tran(upgraded, :)           = simu_outputs%tran
-        dataType%es(upgraded, :)             = simu_outputs%es
-        dataType%hfsbl(upgraded, :)          = simu_outputs%hfsbl
-        dataType%mrro(upgraded, :)           = simu_outputs%mrro
-        dataType%mrros(upgraded, :)          = simu_outputs%mrros
-        dataType%mrrob(upgraded, :)          = simu_outputs%mrrob
-        ! other
-        dataType%mrso(upgraded, :, :)        = simu_outputs%mrso
-        dataType%tsl(upgraded, :, :)         = simu_outputs%tsl
-        dataType%tsland(upgraded, :)         = simu_outputs%tsland
-        dataType%wtd(upgraded, :)            = simu_outputs%wtd
-        dataType%snd(upgraded, :)            = simu_outputs%snd
-        dataType%lai(upgraded, :)            = simu_outputs%lai
-        return
-    end subroutine mcmc_update_outputs
+    !     dataType%gpp(upgraded, :)            = simu_outputs%gpp    
+    !     dataType%nee(upgraded, :)            = simu_outputs%nee
+    !     dataType%npp(upgraded, :)            = simu_outputs%npp
+    !     dataType%nppLeaf(upgraded, :)        = simu_outputs%nppLeaf
+    !     dataType%nppWood(upgraded, :)        = simu_outputs%nppWood
+    !     dataType%nppStem(upgraded, :)        = simu_outputs%nppStem
+    !     dataType%nppRoot(upgraded, :)        = simu_outputs%nppRoot
+    !     dataType%nppOther(upgraded, :)       = simu_outputs%nppOther
+    !     dataType%ra(upgraded, :)             = simu_outputs%ra
+    !     dataType%raLeaf(upgraded, :)         = simu_outputs%raLeaf
+    !     dataType%raStem(upgraded, :)         = simu_outputs%raStem
+    !     dataType%raRoot(upgraded, :)         = simu_outputs%raRoot
+    !     dataType%raOther(upgraded, :)        = simu_outputs%raOther
+    !     dataType%rMaint(upgraded, :)         = simu_outputs%rMaint
+    !     dataType%rGrowth(upgraded, :)        = simu_outputs%rGrowth
+    !     dataType%rh(upgraded, :)             = simu_outputs%rh
+    !     dataType%nbp(upgraded, :)            = simu_outputs%nbp
+    !     dataType%wetlandCH4(upgraded, :)     = simu_outputs%wetlandCH4
+    !     dataType%wetlandCH4prod(upgraded, :) = simu_outputs%wetlandCH4prod
+    !     dataType%wetlandCH4cons(upgraded, :) = simu_outputs%wetlandCH4cons
+    !     ! Carbon Pools  (KgC m-2)
+    !     dataType%cLeaf(upgraded, :)          = simu_outputs%cLeaf
+    !     dataType%cStem(upgraded, :)          = simu_outputs%cStem
+    !     dataType%cRoot(upgraded, :)          = simu_outputs%cRoot
+    !     dataType%cOther(upgraded, :)         = simu_outputs%cOther
+    !     dataType%cLitter(upgraded, :)        = simu_outputs%cLitter
+    !     dataType%cLitterCwd(upgraded, :)     = simu_outputs%cLitterCwd
+    !     dataType%cSoil(upgraded, :)          = simu_outputs%cSoil
+    !     dataType%cSoilLevels(upgraded, :, :) = simu_outputs%cSoilLevels
+    !     dataType%cSoilFast(upgraded, :)      = simu_outputs%cSoilFast
+    !     dataType%cSoilSlow(upgraded, :)      = simu_outputs%cSoilSlow
+    !     dataType%cSoilPassive(upgraded, :)   = simu_outputs%cSoilPassive
+    !     dataType%CH4(upgraded, :, :)         = simu_outputs%CH4
+    !     ! Nitrogen fluxes (kgN m-2 s-1)
+    !     dataType%fBNF(upgraded, :)           = simu_outputs%fBNF
+    !     dataType%fN2O(upgraded, :)           = simu_outputs%fN2O
+    !     dataType%fNloss(upgraded, :)         = simu_outputs%fNloss
+    !     dataType%fNnetmin(upgraded, :)       = simu_outputs%fNnetmin
+    !     dataType%fNdep(upgraded, :)          = simu_outputs% fNdep
+    !     ! Nitrogen pools (kgN m-2)
+    !     dataType%nLeaf(upgraded, :)          = simu_outputs%nLeaf
+    !     dataType%nStem(upgraded, :)          = simu_outputs%nStem
+    !     dataType%nRoot(upgraded, :)          = simu_outputs%nRoot
+    !     dataType%nOther(upgraded, :)         = simu_outputs%nOther
+    !     dataType%nLitter(upgraded, :)        = simu_outputs%nLitter
+    !     dataType%nLitterCwd(upgraded, :)     = simu_outputs%nLitterCwd
+    !     dataType%nSoil(upgraded, :)          = simu_outputs%nSoil
+    !     dataType%nMineral(upgraded, :)       = simu_outputs%nMineral
+    !     ! energy fluxes (W m-2)
+    !     dataType%hfls(upgraded, :)           = simu_outputs%hfls
+    !     dataType%hfss(upgraded, :)           = simu_outputs%hfss
+    !     dataType%SWnet(upgraded, :)          = simu_outputs%SWnet
+    !     dataType%LWnet(upgraded, :)          = simu_outputs%LWnet
+    !     ! water fluxes (kg m-2 s-1)
+    !     dataType%ec(upgraded, :)             = simu_outputs%ec
+    !     dataType%tran(upgraded, :)           = simu_outputs%tran
+    !     dataType%es(upgraded, :)             = simu_outputs%es
+    !     dataType%hfsbl(upgraded, :)          = simu_outputs%hfsbl
+    !     dataType%mrro(upgraded, :)           = simu_outputs%mrro
+    !     dataType%mrros(upgraded, :)          = simu_outputs%mrros
+    !     dataType%mrrob(upgraded, :)          = simu_outputs%mrrob
+    !     ! other
+    !     dataType%mrso(upgraded, :, :)        = simu_outputs%mrso
+    !     dataType%tsl(upgraded, :, :)         = simu_outputs%tsl
+    !     dataType%tsland(upgraded, :)         = simu_outputs%tsland
+    !     dataType%wtd(upgraded, :)            = simu_outputs%wtd
+    !     dataType%snd(upgraded, :)            = simu_outputs%snd
+    !     dataType%lai(upgraded, :)            = simu_outputs%lai
+    !     return
+    ! end subroutine mcmc_update_outputs
 
     subroutine write_outputs_nc(mc_outdir, ntime, nSimuLen, write_data, str_freq)
         implicit none
