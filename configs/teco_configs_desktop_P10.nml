@@ -1,5 +1,5 @@
 &nml_teco_settings
-    case_name   = "test_new_P04"     ! define the case name
+    case_name   = "test_new_P10"     ! define the case name
     do_simu     = False           ! simulation mode
     do_mcmc     = True           ! MCMC for data assimilation mode
     do_spinup   = False           ! spinup mode
@@ -19,10 +19,10 @@
 
     dtimes  = 24               ! 24: hourly simulation
     ! set the input and output path and files
-    inDir             = "/mnt/d/3_case_SPRUCE_data_analysis/2_TECO-SPRUCE_data_assimilation/2_code_based_on_Ma/inputs/data_assimilation/P04"
+    inDir             = "/mnt/d/3_case_SPRUCE_data_analysis/2_TECO-SPRUCE_data_assimilation/2_code_based_on_Ma/inputs/data_assimilation/P10"
     outDir            = "/mnt/d/3_case_SPRUCE_data_analysis/2_TECO-SPRUCE_data_assimilation/2_code_based_on_Ma/outputs"
     ! input files
-    climfile          = "SPRUCE_forcing_plot04.txt"
+    climfile          = "SPRUCE_forcing_plot10.txt"
     watertablefile    = "watertablefile.txt"
     snowdepthfile     = "SPRUCE_Snow_Depth_2011-2014.txt"
     in_restartfile    = "restart.nc"

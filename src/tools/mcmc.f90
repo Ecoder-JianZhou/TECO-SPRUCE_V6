@@ -124,7 +124,8 @@ module mcmc
         
         print *, "# Start to run mcmc ..."
         npft = count_pft
-        call generate_newPar()
+        ! call generate_newPar()
+        call generate_rand_newpar()
         upgraded = 0
         new = 0
         do iDAsimu = 1, nDAsimu
@@ -157,6 +158,7 @@ module mcmc
             endif ! finish ! initialize the TECO model
 
             call teco_simu(vegn, .False.)            ! run the model
+            if (iDAsimu .eq. nDAsimu) call teco_simu(vegn, .True.)
             
             temp_upgraded = upgraded
             call costFuncObs()          ! calculate the cost between observations and simulations
@@ -281,6 +283,27 @@ module mcmc
         endif
         return   ! mainly return the DApar, meanwhile update the coefnorm
     end subroutine generate_newPar
+
+    subroutine generate_rand_newpar()
+        integer igenPar, parflag, ipft
+        real rand_harvest, rand
+
+        call random_seed()
+        do ipft = 1, count_pft
+            do igenPar = 1, npar4DA     ! for each parameters
+1999             continue
+                call random_number(rand_harvest)    
+                rand = rand_harvest - 0.5           ! create a random number in [-0.5, 0.5]
+                mc_DApar(ipft)%DApar(igenPar) = mc_DApar(ipft)%DAparmin(igenPar) + &
+                    rand_harvest*(mc_DApar(ipft)%DAparmax(igenPar) - mc_DApar(ipft)%DAparmin(igenPar))   ! create new parameter
+                if((mc_DApar(ipft)%DApar(igenPar) .gt. mc_DApar(ipft)%DAparmax(igenPar)) &
+                    &   .or. (mc_DApar(ipft)%DApar(igenPar) .lt. mc_DApar(ipft)%DAparmin(igenPar))) then 
+                    goto 1999                  ! judge the range of new parameter
+                endif
+            enddo
+        enddo
+        return
+    end subroutine generate_rand_newpar
 
     subroutine costFuncObs()
         implicit none
@@ -445,7 +468,7 @@ module mcmc
             delta_J = J_new - J_last
         endif
 
-        delta_J = delta_J/5
+        delta_J = delta_J/10
 
         call random_number(cs_rand)
         if(AMIN1(1.0, exp(-delta_J)) .gt. cs_rand)then
