@@ -135,7 +135,39 @@ contains
         integer, intent(in) :: idx_tot, idx_sel
         type(mcmc_outVars_type), intent(in) :: total_simus
         type(mcmc_outVars_type), intent(inout) :: selected_simus
-        
+        integer :: ipft
+
+        do ipft = 1, count_pft
+            selected_simus%allSpec(ipft)%gpp(idx_sel, :)      = total_simus%allSpec(ipft)%gpp(idx_tot, :)
+            selected_simus%allSpec(ipft)%nee(idx_sel, :)      = total_simus%allSpec(ipft)%nee(idx_tot, :)
+            selected_simus%allSpec(ipft)%npp(idx_sel, :)      = total_simus%allSpec(ipft)%npp(idx_tot, :)
+            selected_simus%allSpec(ipft)%nppLeaf(idx_sel, :)  = total_simus%allSpec(ipft)%nppLeaf(idx_tot, :)
+            selected_simus%allSpec(ipft)%nppWood(idx_sel, :)  = total_simus%allSpec(ipft)%nppWood(idx_tot, :)
+            selected_simus%allSpec(ipft)%nppStem(idx_sel, :)  = total_simus%allSpec(ipft)%nppStem(idx_tot, :)
+            selected_simus%allSpec(ipft)%nppRoot(idx_sel, :)  = total_simus%allSpec(ipft)%nppRoot(idx_tot, :)
+            selected_simus%allSpec(ipft)%nppOther(idx_sel, :) = total_simus%allSpec(ipft)%nppOther(idx_tot, :)    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+            selected_simus%allSpec(ipft)%ra(idx_sel, :)       = total_simus%allSpec(ipft)%ra(idx_tot, :)
+            selected_simus%allSpec(ipft)%raLeaf(idx_sel, :)   = total_simus%allSpec(ipft)%raLeaf(idx_tot, :)
+            selected_simus%allSpec(ipft)%raStem(idx_sel, :)   = total_simus%allSpec(ipft)%raStem(idx_tot, :)
+            selected_simus%allSpec(ipft)%raRoot(idx_sel, :)   = total_simus%allSpec(ipft)%raRoot(idx_tot, :)
+            selected_simus%allSpec(ipft)%raOther(idx_sel, :)  = total_simus%allSpec(ipft)%raOther(idx_tot, :)
+            selected_simus%allSpec(ipft)%rMaint(idx_sel, :)   = total_simus%allSpec(ipft)%rMaint(idx_tot, :)
+            selected_simus%allSpec(ipft)%rGrowth(idx_sel, :)  = total_simus%allSpec(ipft)%rGrowth(idx_tot, :)
+            selected_simus%allSpec(ipft)%nbp(idx_sel, :)      = total_simus%allSpec(ipft)%nbp(idx_tot, :)
+            ! Carbon Pools  (KgC m-2)
+            selected_simus%allSpec(ipft)%cLeaf(idx_sel, :)    = total_simus%allSpec(ipft)%cLeaf(idx_tot, :)
+            selected_simus%allSpec(ipft)%cStem(idx_sel, :)    = total_simus%allSpec(ipft)%cStem(idx_tot, :)
+            selected_simus%allSpec(ipft)%cRoot(idx_sel, :)    = total_simus%allSpec(ipft)%cRoot(idx_tot, :)
+            ! Nitrogen pools (kgN m-2)
+            selected_simus%allSpec(ipft)%nLeaf(idx_sel, :)    = total_simus%allSpec(ipft)%nLeaf(idx_tot, :)
+            selected_simus%allSpec(ipft)%nStem(idx_sel, :)    = total_simus%allSpec(ipft)%nStem(idx_tot, :)
+            selected_simus%allSpec(ipft)%nRoot(idx_sel, :)    = total_simus%allSpec(ipft)%nRoot(idx_tot, :)
+            ! selected_simus%allSpec(ipft)%nOther(:)
+            ! water fluxes (kg m-2 s-1)
+            selected_simus%allSpec(ipft)%tran(idx_sel, :)     = total_simus%allSpec(ipft)%tran(idx_tot, :)
+            ! other
+            selected_simus%allSpec(ipft)%lai(idx_sel, :)      = total_simus%allSpec(ipft)%lai(idx_tot, :) 
+        enddo
         selected_simus%gpp(idx_sel, :)            = total_simus%gpp(idx_tot, :)   
         selected_simus%nee(idx_sel, :)            = total_simus%nee(idx_tot, :)
         selected_simus%npp(idx_sel, :)            = total_simus%npp(idx_tot, :)
