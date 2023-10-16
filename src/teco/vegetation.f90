@@ -46,6 +46,7 @@ module vegetation
          Ecanop = Ecan1 + Ecan2
          vegn%allSp(ipft)%gpp    = Acanop*3600.0*12.0                           ! every hour, g C m-2 h-1
          vegn%allSp(ipft)%transp = AMAX1(Ecanop*3600.0/(1.0e6*(2.501 - 0.00236*iforcing%Tair)), 0.) ! mm H2O /hour
+         ! print *, "test_transp: ", Ecanop*3600.0/(1.0e6*(2.501 - 0.00236*iforcing%Tair)), Ecanop, Ecan1, Ecan2
          if (ipft .eq. 1) then
             vegn%gpp    = vegn%allSp(ipft)%gpp
             vegn%transp = vegn%allSp(ipft)%transp
@@ -454,9 +455,11 @@ module vegetation
          eJmxx  = spec%eJmx0*scalex
          if (radabv(1) .ge. 10.0) then                          !check solar Radiation > 10 W/m2
             ! leaf stomata-photosynthesis-transpiration model - daytime
-            call agsean_day(spec, iforcing, windUx, grdn, Qabs, Rnstar, Vcmxx, eJmxx, Tleaf, Aleaf)
+            call agsean_day(spec, iforcing, windUx, grdn, Qabs, Rnstar, Vcmxx, eJmxx, &
+               Tleaf, Aleaf, Eleaf, Hleaf, gbleaf, gsleaf)
          else
-            call agsean_ngt(spec, iforcing, windUx, grdn, Qabs, Rnstar, Vcmxx, Tleaf, Aleaf)
+            call agsean_ngt(spec, iforcing, windUx, grdn, Qabs, Rnstar, Vcmxx, &
+               Tleaf, Aleaf, Eleaf, Hleaf, gbleaf, gsleaf)
          end if
          fslt      = exp(-extKb*flai)                        !fraction of sunlit leaves
          fshd      = 1.0 - fslt                                !fraction of shaded leaves
@@ -486,6 +489,7 @@ module vegetation
          Ecan1      = Ecan1 + fslt*Eleaf(1)*Gaussw(ng)*flait
          Ecan2      = Ecan2 + fshd*Eleaf(2)*Gaussw(ng)*flait
          EcanL(ng)  = Ecan1 + Ecan2
+         ! print *, "test_transp1: ", Ecan1, fslt, Eleaf(1), Gaussw(ng), flait
 
          Hcan1     = Hcan1 + fslt*Hleaf(1)*Gaussw(ng)*flait
          Hcan2     = Hcan2 + fshd*Hleaf(2)*Gaussw(ng)*flait
@@ -656,12 +660,14 @@ module vegetation
       return
    end subroutine goudriaan
 
-   subroutine agsean_day(spec, iforcing, windUx, grdn, Qabs, Rnstar, Vcmxx, eJmxx, Tleaf, Aleaf)
+   subroutine agsean_day(spec, iforcing, windUx, grdn, Qabs, Rnstar, Vcmxx, eJmxx, &
+      Tleaf, Aleaf, Eleaf, Hleaf, gbleaf, gsleaf)
       implicit none
       type(spec_data_type), intent(inout) :: spec
       type(forcing_data_type), intent(in) :: iforcing
       real, intent(in) :: windUx, grdn, Qabs(3,2), Rnstar(2), Vcmxx, eJmxx
-      real :: Tleaf(2), Eleaf(2), Hleaf(2), gbleaf(2), gsleaf(2)  ! output?
+      real, intent(inout) :: Eleaf(2), Tleaf(2),  Hleaf(2), gbleaf(2), gsleaf(2), Aleaf(2)
+      ! real :: Tleaf(2),  Hleaf(2), gbleaf(2), gsleaf(2)  ! output?
       ! local variables
       integer :: kr1, ileaf
       real    :: Gras, gbHf, gbH, rbH, rbw, rbH_L, rrdn, Y
@@ -670,7 +676,7 @@ module vegetation
       real    :: rhocp, H2OLv, Cmolar, raero
       real    :: gbHu, Tlk, Dleaf, slope, psyc
       real    :: gbc, gsc0, co2cs, Qapar
-      real    :: Aleaf(2), co2ci(2)
+      real    :: co2ci(2)
       ! variables from other subroutine
       real    :: Aleafx, Gscx
 
@@ -769,7 +775,8 @@ module vegetation
    end subroutine agsean_day
 
    ! -------------------------------------------------------------------------
-   subroutine agsean_ngt(spec, iforcing, windUx, grdn, Qabs, Rnstar, Vcmxx, Tleaf, Aleaf)
+   subroutine agsean_ngt(spec, iforcing, windUx, grdn, Qabs, Rnstar, Vcmxx,  &
+      Tleaf, Aleaf, Eleaf, Hleaf, gbleaf, gsleaf)
       implicit none
       type(spec_data_type), intent(inout) :: spec
       type(forcing_data_type), intent(in) :: iforcing

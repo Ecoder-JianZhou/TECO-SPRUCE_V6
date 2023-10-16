@@ -6,37 +6,21 @@ module mcmc
 
     implicit none
 
-    ! integer nDAsimu
-    ! real search_scale
-
-    integer npar4DA, iDAsimu, upgraded, ipar, covexist
-    ! real, allocatable :: DAparmin(:), DAparmax(:), DApar(:), DApar_old(:)
-    type params_DApar
-        real, allocatable :: DAparmin(:)
-        real, allocatable :: DAparmax(:)
-        real, allocatable :: DApar(:)
-        real, allocatable :: DApar_old(:)
-        integer, allocatable :: DAparidx(:)
-        real, allocatable :: gamma(:,:)
-        real, allocatable :: gamnew(:,:)
-        real, allocatable :: coefhistory(:,:)
-        real, allocatable :: coefnorm(:)
-        real, allocatable :: coefac(:)
-    end type params_DApar
-    type(params_DApar), allocatable :: mc_DApar(:)
-    ! integer, allocatable :: DAparidx(:)
-    ! real, allocatable :: MDparval(:), gamma(:,:), gamnew(:,:), coefhistory(:,:), coefnorm(:), coefac(:)
+    integer npar4DA, iDAsimu, ipar, covexist
+    
     real fact_rejet
     real J_last, J_new, accept_rate
     integer new, reject
     logical do_cov2createNewPars
-    ! integer, parameter :: nc = 100, ncov = 500
 
-    type(nml_params_data_type),allocatable     :: mc_in_params(:)
-    type(nml_initValue_data_type), allocatable :: mc_init_params(:)
+    type(nml_params_data_type),allocatable     :: mc_in_params(:)     !   in_params for MCMC
+    type(nml_initValue_data_type), allocatable :: mc_init_params(:)   ! init_params for MCMC
 
     contains
     subroutine init_mcmc(files_vegn_params, vegn)
+    ! *** files_vegn_params : array of files for vegetation parameters
+    ! ***              vegn : return the vegn data
+    ! *** put values to the variables for MCMC
         implicit none
         real, allocatable :: temp_parmin(:), temp_parmax(:), temp_parval(:)
         integer, allocatable :: temp_paridx(:)
@@ -47,24 +31,20 @@ module mcmc
         integer :: ipft, npft
 
         ! read the nml file of MCMC configs (eg. TECO_MCMC_configs.nml)
-        call readConfsNml()
-        
+        call readConfsNml()     
         npar = nSpecParams
-        ! print *, "nSpecParams", nSpecParams
         npft = size(files_vegn_params)
         ! initilize the parameters and initial values in TECO model
         allocate(vegn%allSp(npft))
         vegn%npft = npft
 
-        allocate(mc_parvals(npft))
+        allocate(mc_parvals(npft))      ! parval, parmin, parmax
         allocate(mc_in_params(npft))
         allocate(mc_init_params(npft))
 
         if(allocated(vegn%allSp)) then
             do ipft = 1, count_pft
                 allocate(mc_parvals(ipft)%parval(npar), mc_parvals(ipft)%parmin(npar), mc_parvals(ipft)%parmax(npar))
-                ! print*, "test size: ", size(mc_parvals(ipft)%parval), size(mc_parvals(ipft)%parmin), &
-                !     size(mc_parvals(ipft)%parmax), npar
                 call readParamNml(adjustl(trim("configs/"//adjustl(trim(files_vegn_params(ipft))))), &
                     mc_in_params(ipft), mc_init_params(ipft), &
                     mc_parvals(ipft)%parval, mc_parvals(ipft)%parmin, mc_parvals(ipft)%parmax)
@@ -82,7 +62,6 @@ module mcmc
 
         ! read the observational data
         call readObsData() ! return a type array of vars4MCMC
-        print*, "here .. "
         ! handle the parameters for MCMC
         allocate(mc_DApar(npft)) 
         allocate(temp_parmin(npar), temp_parmax(npar))  ! allocate the temporary parmin value
@@ -130,7 +109,7 @@ module mcmc
             enddo
             allocate(mc_DApar(ipft)%gamnew(npar4DA, npar4DA))
         enddo
-        J_last = 900000.0
+        J_last = 9000000.0
         ! init the outputs
         call init_mcmc_outputs(nDAsimu, npar4DA)
     end subroutine init_mcmc
@@ -144,7 +123,7 @@ module mcmc
         print *, "# Start to run mcmc ..."
         npft = count_pft
         call generate_newPar()
-
+        upgraded = 1
         do iDAsimu = 1, nDAsimu
             write(*,*) iDAsimu, "/", nDAsimu, J_last, J_new, upgraded, accept_rate
             call mcmc_functions_init()  ! initialize the mc_itime ... variables
@@ -174,7 +153,7 @@ module mcmc
                 enddo
             endif ! finish ! initialize the TECO model
 
-            call teco_simu(vegn, .True.)            ! run the model
+            call teco_simu(vegn, .False.)            ! run the model
             
             temp_upgraded = upgraded
             call costFuncObs()          ! calculate the cost between observations and simulations
@@ -241,7 +220,7 @@ module mcmc
         enddo
 
         ! summary
-        call mcmc_param_outputs(upgraded, npar4DA, parnames, mc_DApar(ipft)%DAparidx)
+        call mcmc_param_outputs(upgraded, npar4DA, parnames)!, mc_DApar)
     end subroutine run_mcmc
 
     subroutine generate_newPar()
@@ -298,105 +277,157 @@ module mcmc
         implicit none
         real J_cost, delta_J, cs_rand
         integer :: ipft, npft
+        
         J_new = 0
-        ! vars4MCMC
-        ! gpp_d
+
+        ! ANPP_Shrub_y
+        if(vars4MCMC%ANPP_Shrub_y%existOrNot)then
+            call CalculateCost(vars4MCMC%ANPP_Shrub_y%mdData(:,4), vars4MCMC%ANPP_Shrub_y%obsData(:,4),&
+                 vars4MCMC%ANPP_Shrub_y%obsData(:,5), J_cost)
+            J_new = J_new + J_cost/200
+        endif
+        print*, "J_new1: ", J_new
+        print*, "test1:",vars4MCMC%ANPP_Shrub_y%mdData(:,4), vars4MCMC%ANPP_Shrub_y%obsData(:,4),&
+                 vars4MCMC%ANPP_Shrub_y%obsData(:,5)
+
+        ! ANPP_Tree_y
+        if(vars4MCMC%ANPP_Tree_y%existOrNot)then
+            call CalculateCost(vars4MCMC%ANPP_Tree_y%mdData(:,4), vars4MCMC%ANPP_Tree_y%obsData(:,4),&
+                 vars4MCMC%ANPP_Tree_y%obsData(:,5), J_cost)
+            J_new = J_new + J_cost/400
+        endif
+        print*, "J_new2: ", J_new
+        ! print*, "test1:",vars4MCMC%ANPP_Tree_y%mdData(:,4), vars4MCMC%ANPP_Tree_y%mdData(:,1),&
+        !          vars4MCMC%ANPP_Tree_y%mdData(:,2),vars4MCMC%ANPP_Tree_y%mdData(:,3)
+
+        ! NPP_sphag_y
+        if(vars4MCMC%NPP_sphag_y%existOrNot)then
+            call CalculateCost(vars4MCMC%NPP_sphag_y%mdData(:,4), vars4MCMC%NPP_sphag_y%obsData(:,4),&
+                 vars4MCMC%NPP_sphag_y%obsData(:,5), J_cost)
+            J_new = J_new + J_cost/1200
+        endif
+        print*, "J_new3: ", J_new
+
+        ! BNPP_y        ! tree + shrub
+        if(vars4MCMC%BNPP_y%existOrNot)then
+            call CalculateCost(vars4MCMC%BNPP_y%mdData(:,4), vars4MCMC%BNPP_y%obsData(:,4),&
+                 vars4MCMC%BNPP_y%obsData(:,5), J_cost)
+            J_new = J_new + J_cost/200
+        endif
+        print*, "J_new4: ", J_new
+        ! er_d          ! shrub + sphag.
+        if(vars4MCMC%er_d%existOrNot)then
+            call CalculateCost(vars4MCMC%er_d%mdData(:,4), vars4MCMC%er_d%obsData(:,4),&
+                 vars4MCMC%er_d%obsData(:,5), J_cost)
+            J_new = J_new + J_cost
+        endif
+        print*, "J_new5: ", J_new
+        ! er_h          ! shrub + sphag.
+
+        if(vars4MCMC%er_h%existOrNot)then
+            call CalculateCost(vars4MCMC%er_h%mdData(:,4), vars4MCMC%er_h%obsData(:,4),&
+                 vars4MCMC%er_h%obsData(:,5), J_cost)
+            J_new = J_new + J_cost
+        endif
+        print*, "J_new6: ", J_new
+        ! gpp_d         ! Shrub + sphag.
         if(vars4MCMC%gpp_d%existOrNot)then
-            ! write(*,*) "testMD: ", vars4MCMC%gpp_d%mdData(:,4)
-            ! write(*,*) "testOD: ", vars4MCMC%gpp_d%obsData(:,4)
             call CalculateCost(vars4MCMC%gpp_d%mdData(:,4), vars4MCMC%gpp_d%obsData(:,4),&
                  vars4MCMC%gpp_d%obsData(:,5), J_cost)
             J_new = J_new + J_cost
         endif
-        ! nee_d
+        print*, "J_new7: ", J_new
+        ! nee_d         ! Shrub + sphag.
         if(vars4MCMC%nee_d%existOrNot)then
             call CalculateCost(vars4MCMC%nee_d%mdData(:,4), vars4MCMC%nee_d%obsData(:,4),&
                  vars4MCMC%nee_d%obsData(:,5), J_cost)
-            J_new = J_new + J_cost
+            J_new = J_new + J_cost/10
         endif
-        ! reco_d
-        if(vars4MCMC%reco_d%existOrNot)then
-            call CalculateCost(vars4MCMC%reco_d%mdData(:,4), vars4MCMC%reco_d%obsData(:,4),&
-                 vars4MCMC%reco_d%obsData(:,5), J_cost)
-            J_new = J_new + J_cost
-        endif
-        ! gpp_h
-        if(vars4MCMC%gpp_h%existOrNot)then
-            call CalculateCost(vars4MCMC%gpp_h%mdData(:,4), vars4MCMC%gpp_h%obsData(:,4),&
-                 vars4MCMC%gpp_h%obsData(:,5), J_cost)
-            J_new = J_new + J_cost
-        endif
-        ! write(*,*) "here3",J_new
-        ! nee_h
+        print*, "J_new8: ", J_new
+        ! nee_h         ! shrub + sphag.
         if(vars4MCMC%nee_h%existOrNot)then
             call CalculateCost(vars4MCMC%nee_h%mdData(:,4), vars4MCMC%nee_h%obsData(:,4),&
                  vars4MCMC%nee_h%obsData(:,5), J_cost)
-            J_new = J_new + J_cost*100
+            J_new = J_new + J_cost/8
         endif
-        ! write(*,*) "here4",J_new
-        ! reco_h
-        if(vars4MCMC%reco_h%existOrNot)then
-            ! write(*,*)vars4MCMC%reco_h%filepath
-            ! write(*,*)vars4MCMC%reco_h%mdData(:,4)
-            ! write(*,*)vars4MCMC%reco_h%obsData(:,4)
-            ! write(*,*)vars4MCMC%reco_h%obsData(:,5)
-            ! stop
-            call CalculateCost(vars4MCMC%reco_h%mdData(:,4), vars4MCMC%reco_h%obsData(:,4),&
-                 vars4MCMC%reco_h%obsData(:,5), J_cost)
+        print*, "J_new9: ", J_new
+        ! LAI_d         ! tree  + Shrub
+        if(vars4MCMC%LAI_d%existOrNot)then
+            call CalculateCost(vars4MCMC%LAI_d%mdData(:,4), vars4MCMC%LAI_d%obsData(:,4),&
+                 vars4MCMC%LAI_d%obsData(:,5), J_cost)
             J_new = J_new + J_cost
         endif
-        ! write(*,*) "here5",J_new
+        print*, "J_new10: ", J_new
+
+        ! leaf_mass_shrub_y
+        if(vars4MCMC%leaf_mass_shrub_y%existOrNot)then
+            call CalculateCost(vars4MCMC%leaf_mass_shrub_y%mdData(:,4), vars4MCMC%leaf_mass_shrub_y%obsData(:,4),&
+                 vars4MCMC%leaf_mass_shrub_y%obsData(:,5), J_cost)
+            J_new = J_new + J_cost/2000
+        endif
+        print*, "J_new11: ", J_new
+
+        ! stem_mass_shrub_y
+        if(vars4MCMC%stem_mass_shrub_y%existOrNot)then
+            call CalculateCost(vars4MCMC%stem_mass_shrub_y%mdData(:,4), vars4MCMC%stem_mass_shrub_y%obsData(:,4),&
+                 vars4MCMC%stem_mass_shrub_y%obsData(:,5), J_cost)
+            J_new = J_new + J_cost/5000
+        endif
+        print*, "J_new12: ", J_new
+
+        ! leaf_resp_shrub_d 
+        if(vars4MCMC%leaf_resp_shrub_d%existOrNot)then
+            call CalculateCost(vars4MCMC%leaf_resp_shrub_d%mdData(:,4), vars4MCMC%leaf_resp_shrub_d%obsData(:,4),&
+                 vars4MCMC%leaf_resp_shrub_d%obsData(:,5), J_cost)
+            J_new = J_new + J_cost
+        endif
+        print*, "J_new13: ", J_new
+
+        ! leaf_resp_tree_d 
+        if(vars4MCMC%leaf_resp_tree_d%existOrNot)then
+            call CalculateCost(vars4MCMC%leaf_resp_tree_d%mdData(:,4), vars4MCMC%leaf_resp_tree_d%obsData(:,4),&
+                 vars4MCMC%leaf_resp_tree_d%obsData(:,5), J_cost)
+            J_new = J_new + J_cost
+        endif
+        print*, "J_new14: ", J_new
+        ! ch4_d 
+        if(vars4MCMC%ch4_d%existOrNot)then
+            call CalculateCost(vars4MCMC%ch4_d%mdData(:,4), vars4MCMC%ch4_d%obsData(:,4),&
+                 vars4MCMC%ch4_d%obsData(:,5), J_cost)
+            J_new = J_new + J_cost/50000
+        endif
+        print*, "J_new15: ", J_new
         ! ch4_h
-        ! write(*,*)vars4MCMC%ch4_h%mdData(:,4)
-        !     write(*,*)vars4MCMC%ch4_h%obsData(:,4)
-        !     write(*,*)vars4MCMC%ch4_h%obsData(:,5)
         if(vars4MCMC%ch4_h%existOrNot)then
             call CalculateCost(vars4MCMC%ch4_h%mdData(:,4), vars4MCMC%ch4_h%obsData(:,4),&
                  vars4MCMC%ch4_h%obsData(:,5), J_cost)
-            J_new = J_new + J_cost
+            J_new = J_new + J_cost/200
         endif
-        ! write(*,*) "here6",J_new
-        ! cleaf
-        if(vars4MCMC%cleaf%existOrNot)then
-            call CalculateCost(vars4MCMC%cleaf%mdData(:,4), vars4MCMC%cleaf%obsData(:,4),&
-                 vars4MCMC%cleaf%obsData(:,5), J_cost)
-            J_new = J_new + J_cost
-        endif
-        ! write(*,*) "here7",J_new
-        ! cwood
-        if(vars4MCMC%cwood%existOrNot)then
-            call CalculateCost(vars4MCMC%cwood%mdData(:,4), vars4MCMC%cwood%obsData(:,4),&
-                 vars4MCMC%cwood%obsData(:,5), J_cost)
-            J_new = J_new + J_cost
-        endif
+        print*, "J_new16: ", J_new
         
-        ! bnpp_y
-        if(vars4MCMC%bnpp_y%existOrNot)then
-            call CalculateCost(vars4MCMC%bnpp_y%mdData(:,4), &
-                vars4MCMC%bnpp_y%obsData(:,4),&
-                vars4MCMC%bnpp_y%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/100
+        ! CN_shag_d 
+        if(vars4MCMC%CN_shag_d%existOrNot)then
+            call CalculateCost(vars4MCMC%CN_shag_d%mdData(:,4), vars4MCMC%CN_shag_d%obsData(:,4),&
+                 vars4MCMC%CN_shag_d%obsData(:,5), J_cost)
+            J_new = J_new + J_cost/6
         endif
+        print*, "J_new17: ", J_new
 
-        npft = count_pft
-        do ipft = 1, npft
-            if(vars4MCMC%spec_vars(ipft)%anpp_y%existOrNot)then
-                call CalculateCost(vars4MCMC%spec_vars(ipft)%anpp_y%mdData(:,4), &
-                    vars4MCMC%spec_vars(ipft)%anpp_y%obsData(:,4),&
-                    vars4MCMC%spec_vars(ipft)%anpp_y%obsData(:,5), J_cost)
-                J_new = J_new + J_cost/2000
-            endif
-            ! write(*,*) "here10",J_new
+        ! photo_shrub_d 
+        if(vars4MCMC%photo_shrub_d%existOrNot)then
+            call CalculateCost(vars4MCMC%photo_shrub_d%mdData(:,4), vars4MCMC%photo_shrub_d%obsData(:,4),&
+                 vars4MCMC%photo_shrub_d%obsData(:,5), J_cost)
+            J_new = J_new + J_cost/4
+        endif
+        print*, "J_new18: ", J_new
 
-            ! write(*,*) "here9",J_new
-            ! lai_h
-            if(vars4MCMC%spec_vars(ipft)%lai_h%existOrNot)then
-                call CalculateCost(vars4MCMC%spec_vars(ipft)%lai_h%mdData(:,4), &
-                    vars4MCMC%spec_vars(ipft)%lai_h%obsData(:,4),&
-                    vars4MCMC%spec_vars(ipft)%lai_h%obsData(:,5), J_cost)
-                J_new = J_new + J_cost
-            endif
-        enddo
+        ! photo_tree_d 
+        if(vars4MCMC%photo_tree_d%existOrNot)then
+            call CalculateCost(vars4MCMC%photo_tree_d%mdData(:,4), vars4MCMC%photo_tree_d%obsData(:,4),&
+                 vars4MCMC%photo_tree_d%obsData(:,5), J_cost)
+            J_new = J_new + J_cost
+        endif
+        print*, "J_new19: ", J_new
         ! ------------------------------------------------------------------------------------
         ! write(*,*) "here2",J_new
         if(J_new .eq. 0) then ! no data is available
@@ -704,47 +735,54 @@ module mcmc
             deallocate(mc_DApar)
         endif
         
-        if(allocated(vars4MCMC%gpp_d%obsData))  deallocate(vars4MCMC%gpp_d%obsData)
-        if(allocated(vars4MCMC%nee_d%obsData))  deallocate(vars4MCMC%nee_d%obsData)
-        if(allocated(vars4MCMC%reco_d%obsData)) deallocate(vars4MCMC%reco_d%obsData)
-        if(allocated(vars4MCMC%gpp_h%obsData))  deallocate(vars4MCMC%gpp_h%obsData)
-        if(allocated(vars4MCMC%nee_h%obsData))  deallocate(vars4MCMC%nee_h%obsData)
-        if(allocated(vars4MCMC%reco_h%obsData)) deallocate(vars4MCMC%reco_h%obsData)
-        if(allocated(vars4MCMC%ch4_h%obsData))  deallocate(vars4MCMC%ch4_h%obsData)
-        if(allocated(vars4MCMC%cleaf%obsData))  deallocate(vars4MCMC%cleaf%obsData)
-        if(allocated(vars4MCMC%cwood%obsData))  deallocate(vars4MCMC%cwood%obsData)
 
-        if(allocated(vars4MCMC%gpp_d%mdData))  deallocate(vars4MCMC%gpp_d%mdData)
-        if(allocated(vars4MCMC%nee_d%mdData))  deallocate(vars4MCMC%nee_d%mdData)
-        if(allocated(vars4MCMC%reco_d%mdData)) deallocate(vars4MCMC%reco_d%mdData)
-        if(allocated(vars4MCMC%gpp_h%mdData))  deallocate(vars4MCMC%gpp_h%mdData)
-        if(allocated(vars4MCMC%nee_h%mdData))  deallocate(vars4MCMC%nee_h%mdData)
-        if(allocated(vars4MCMC%reco_h%mdData)) deallocate(vars4MCMC%reco_h%mdData)
-        if(allocated(vars4MCMC%ch4_h%mdData))  deallocate(vars4MCMC%ch4_h%mdData)
-        if(allocated(vars4MCMC%cleaf%mdData))  deallocate(vars4MCMC%cleaf%mdData)
-        if(allocated(vars4MCMC%cwood%mdData))  deallocate(vars4MCMC%cwood%mdData)
+        if(allocated(vars4MCMC%ANPP_Shrub_y%obsData))  deallocate(vars4MCMC%ANPP_Shrub_y%obsData)
+        if(allocated(vars4MCMC%ANPP_Tree_y%obsData))  deallocate(vars4MCMC%ANPP_Tree_y%obsData)
+        if(allocated(vars4MCMC%NPP_sphag_y%obsData))  deallocate(vars4MCMC%NPP_sphag_y%obsData)
+        if(allocated(vars4MCMC%BNPP_y%obsData))  deallocate(vars4MCMC%BNPP_y%obsData)        ! tree + shrub
+        if(allocated(vars4MCMC%er_d%obsData))  deallocate(vars4MCMC%er_d%obsData)          ! shrub + sphag.
+        if(allocated(vars4MCMC%er_h%obsData))  deallocate(vars4MCMC%er_h%obsData)          ! shrub + sphag.
+        if(allocated(vars4MCMC%gpp_d%obsData))  deallocate(vars4MCMC%gpp_d%obsData)         ! Shrub + sphag.
+        if(allocated(vars4MCMC%nee_d%obsData))  deallocate(vars4MCMC%nee_d%obsData)         ! Shrub + sphag.
+        if(allocated(vars4MCMC%nee_h%obsData))  deallocate(vars4MCMC%nee_h%obsData)         ! shrub + sphag.
+        if(allocated(vars4MCMC%LAI_d%obsData))  deallocate(vars4MCMC%LAI_d%obsData)         ! tree  + Shrub
+        !
+        if(allocated(vars4MCMC%leaf_mass_shrub_y%obsData))  deallocate(vars4MCMC%leaf_mass_shrub_y%obsData)
+        if(allocated(vars4MCMC%stem_mass_shrub_y%obsData))  deallocate(vars4MCMC%stem_mass_shrub_y%obsData)
+        if(allocated(vars4MCMC%leaf_resp_shrub_d%obsData))  deallocate(vars4MCMC%leaf_resp_shrub_d%obsData) 
+        if(allocated(vars4MCMC%leaf_resp_tree_d%obsData))  deallocate(vars4MCMC%leaf_resp_tree_d%obsData) 
+        ! methane
+        if(allocated(vars4MCMC%ch4_d%obsData))  deallocate(vars4MCMC%ch4_d%obsData) 
+        if(allocated(vars4MCMC%ch4_h%obsData))  deallocate(vars4MCMC%ch4_h%obsData) 
+        ! 
+        if(allocated(vars4MCMC%CN_shag_d%obsData))  deallocate(vars4MCMC%CN_shag_d%obsData) 
+        if(allocated(vars4MCMC%photo_shrub_d%obsData))  deallocate(vars4MCMC%photo_shrub_d%obsData) 
+        if(allocated(vars4MCMC%photo_tree_d%obsData))  deallocate(vars4MCMC%photo_tree_d%obsData) 
+        ! ---------------------------------------------------------------------------------------------
 
-        if(allocated(vars4MCMC%bnpp_y%obsData)) deallocate(vars4MCMC%bnpp_y%obsData)
-        
-        if(allocated(vars4MCMC%bnpp_y%mdData)) deallocate(vars4MCMC%bnpp_y%mdData)
-
-        do ipft = 1, npft
-            if(allocated(vars4MCMC%spec_vars(ipft)%anpp_y%obsData)) then
-                deallocate(vars4MCMC%spec_vars(ipft)%anpp_y%obsData)
-            endif
-            
-            if(allocated(vars4MCMC%spec_vars(ipft)%lai_h%obsData)) then
-                deallocate(vars4MCMC%spec_vars(ipft)%lai_h%obsData)
-            endif
-            if(allocated(vars4MCMC%spec_vars(ipft)%anpp_y%mdData)) then 
-                deallocate(vars4MCMC%spec_vars(ipft)%anpp_y%mdData)
-            endif
-            
-            if(allocated(vars4MCMC%spec_vars(ipft)%lai_h%mdData))  then
-                deallocate(vars4MCMC%spec_vars(ipft)%lai_h%mdData)
-            endif
-        enddo
-        if(allocated(vars4MCMC%spec_vars)) deallocate(vars4MCMC%spec_vars) 
+        if(allocated(vars4MCMC%ANPP_Shrub_y%mdData))  deallocate(vars4MCMC%ANPP_Shrub_y%mdData)
+        if(allocated(vars4MCMC%ANPP_Tree_y%mdData))  deallocate(vars4MCMC%ANPP_Tree_y%mdData)
+        if(allocated(vars4MCMC%NPP_sphag_y%mdData))  deallocate(vars4MCMC%NPP_sphag_y%mdData)
+        if(allocated(vars4MCMC%BNPP_y%mdData))  deallocate(vars4MCMC%BNPP_y%mdData)        ! tree + shrub
+        if(allocated(vars4MCMC%er_d%mdData))  deallocate(vars4MCMC%er_d%mdData)          ! shrub + sphag.
+        if(allocated(vars4MCMC%er_h%mdData))  deallocate(vars4MCMC%er_h%mdData)          ! shrub + sphag.
+        if(allocated(vars4MCMC%gpp_d%mdData))  deallocate(vars4MCMC%gpp_d%mdData)         ! Shrub + sphag.
+        if(allocated(vars4MCMC%nee_d%mdData))  deallocate(vars4MCMC%nee_d%mdData)         ! Shrub + sphag.
+        if(allocated(vars4MCMC%nee_h%mdData))  deallocate(vars4MCMC%nee_h%mdData)         ! shrub + sphag.
+        if(allocated(vars4MCMC%LAI_d%mdData))  deallocate(vars4MCMC%LAI_d%mdData)         ! tree  + Shrub
+        !
+        if(allocated(vars4MCMC%leaf_mass_shrub_y%mdData))  deallocate(vars4MCMC%leaf_mass_shrub_y%mdData)
+        if(allocated(vars4MCMC%stem_mass_shrub_y%mdData))  deallocate(vars4MCMC%stem_mass_shrub_y%mdData)
+        if(allocated(vars4MCMC%leaf_resp_shrub_d%mdData))  deallocate(vars4MCMC%leaf_resp_shrub_d%mdData) 
+        if(allocated(vars4MCMC%leaf_resp_tree_d%mdData))  deallocate(vars4MCMC%leaf_resp_tree_d%mdData) 
+        ! methane
+        if(allocated(vars4MCMC%ch4_d%mdData))  deallocate(vars4MCMC%ch4_d%mdData) 
+        if(allocated(vars4MCMC%ch4_h%mdData))  deallocate(vars4MCMC%ch4_h%mdData) 
+        ! 
+        if(allocated(vars4MCMC%CN_shag_d%mdData))  deallocate(vars4MCMC%CN_shag_d%mdData) 
+        if(allocated(vars4MCMC%photo_shrub_d%mdData))  deallocate(vars4MCMC%photo_shrub_d%mdData) 
+        if(allocated(vars4MCMC%photo_tree_d%mdData))  deallocate(vars4MCMC%photo_tree_d%mdData) 
+        ! ---------------------------------------------------------------------------------------------
 
         if(allocated(parnames)) deallocate(parnames)
 
@@ -755,17 +793,17 @@ module mcmc
         enddo
         if(allocated(arr_params_set)) deallocate(arr_params_set)
 
-        if (do_mc_out_hr)then
-            call deallocate_mcmc_outs_type(sel_paramsets_outs_h)
-            call deallocate_mcmc_outs_type(tot_paramsets_outs_h)
-        endif
+        ! if (do_mc_out_hr)then
+        !     call deallocate_mcmc_outs_type(sel_paramsets_outs_h)
+        !     call deallocate_mcmc_outs_type(tot_paramsets_outs_h)
+        ! endif
         if (do_mc_out_day)then
             call deallocate_mcmc_outs_type(sel_paramsets_outs_d)
             call deallocate_mcmc_outs_type(tot_paramsets_outs_d)
         endif
-        if (do_mc_out_mon)then
-            call deallocate_mcmc_outs_type(sel_paramsets_outs_m)
-            call deallocate_mcmc_outs_type(tot_paramsets_outs_m)
-        endif
+        ! if (do_mc_out_mon)then
+        !     call deallocate_mcmc_outs_type(sel_paramsets_outs_m)
+        !     call deallocate_mcmc_outs_type(tot_paramsets_outs_m)
+        ! endif
     end subroutine deallocate_mcmc
 end module mcmc

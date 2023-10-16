@@ -7,90 +7,10 @@ module MCMC_outputs
     implicit none
     ! This part of results will be stored in CSV-format
 
-    type mcmc_outVars_type
-        ! carbon fluxes (Kg C m-2 s-1)
-        real, allocatable :: gpp(:, :)
-        real, allocatable :: nee(:, :)
-        real, allocatable :: npp(:, :)
-        real, allocatable :: nppLeaf(:, :)
-        real, allocatable :: nppWood(:, :)
-        real, allocatable :: nppStem(:, :)
-        real, allocatable :: nppRoot(:, :)
-        real, allocatable :: nppOther(:, :)           ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
-        real, allocatable :: ra(:, :)
-        real, allocatable :: raLeaf(:, :)
-        real, allocatable :: raStem(:, :)
-        real, allocatable :: raRoot(:, :)
-        real, allocatable :: raOther(:, :)
-        real, allocatable :: rMaint(:, :)
-        real, allocatable :: rGrowth(:, :)            ! maintenance respiration and growth respiration
-        real, allocatable :: rh(:, :)
-        real, allocatable :: nbp(:, :)                ! heterotrophic respiration. NBP(net biome productivity) = GPP - Rh - Ra - other losses  
-        real, allocatable :: wetlandCH4(:, :)
-        real, allocatable :: wetlandCH4prod(:, :)
-        real, allocatable :: wetlandCH4cons(:, :)     ! wetland net fluxes of CH4, CH4 production, CH4 consumption
-        ! Carbon Pools  (KgC m-2)
-        real, allocatable :: cLeaf(:, :)
-        real, allocatable :: cStem(:, :)
-        real, allocatable :: cRoot(:, :)
-        real, allocatable :: cOther(:, :)              ! cOther: carbon biomass in other plant organs(reserves, fruits), Jian: maybe NSC storage in TECO?
-        real, allocatable :: cLitter(:, :)
-        real, allocatable :: cLitterCwd(:, :)          ! litter (excluding coarse woody debris), Jian: fine litter in TECO?, cLitterCwd: carbon in coarse woody debris
-        real, allocatable :: cSoil(:, :)
-        real, allocatable :: cSoilLevels(:, :, :)
-        real, allocatable :: cSoilFast(:, :)
-        real, allocatable :: cSoilSlow(:, :)
-        real, allocatable :: cSoilPassive(:, :)           ! cSoil: soil organic carbon (Jian: total soil carbon); cSoilLevels(depth-specific soil organic carbon, Jian: depth?); cSoilPools (different pools without depth)
-        real, allocatable :: CH4(:, :, :)          ! methane concentration
-        ! Nitrogen fluxes (kgN m-2 s-1)
-        real, allocatable :: fBNF(:, :)
-        real, allocatable :: fN2O(:, :)
-        real, allocatable :: fNloss(:, :)
-        real, allocatable :: fNnetmin(:, :)
-        real, allocatable :: fNdep(:, :)                   ! fBNF: biological nitrogen fixation; fN2O: loss of nitrogen through emission of N2O; fNloss:Total loss of nitrogen to the atmosphere and from leaching; net mineralizaiton and deposition of N
-        ! Nitrogen pools (kgN m-2)
-        real, allocatable :: nLeaf(:, :)
-        real, allocatable :: nStem(:, :)
-        real, allocatable :: nRoot(:, :)
-        real, allocatable :: nOther(:, :)
-        real, allocatable :: nLitter(:, :)
-        real, allocatable :: nLitterCwd(:, :)
-        real, allocatable :: nSoil(:, :)
-        real, allocatable :: nMineral(:, :)                ! nMineral: Mineral nitrogen pool
-        ! energy fluxes (W m-2)
-        real, allocatable :: hfls(:, :)
-        real, allocatable :: hfss(:, :)
-        real, allocatable :: SWnet(:, :)
-        real, allocatable :: LWnet(:, :)                   ! Sensible heat flux; Latent heat flux; Net shortwave radiation; Net longwave radiation
-        ! water fluxes (kg m-2 s-1)
-        real, allocatable :: ec(:, :)
-        real, allocatable :: tran(:, :)
-        real, allocatable :: es(:, :)                      ! Canopy evaporation; Canopy transpiration; Soil evaporation
-        real, allocatable :: hfsbl(:, :)                   ! Snow sublimation
-        real, allocatable :: mrro(:, :)
-        real, allocatable :: mrros(:, :)
-        real, allocatable :: mrrob(:, :)                   ! Total runoff; Surface runoff; Subsurface runoff
-        ! other
-        real, allocatable :: mrso(:, :, :)           ! Kg m-2, soil moisture in each soil layer
-        real, allocatable :: tsl(:, :, :)            ! K, soil temperature in each soil layer
-        real, allocatable :: tsland(:, :)                  ! K, surface temperature
-        real, allocatable :: wtd(:, :)                     ! m, Water table depth
-        real, allocatable :: snd(:, :)                     ! m, Total snow depth
-        real, allocatable :: lai(:, :)                     ! m2 m-2, Leaf area index            
-    end type mcmc_outVars_type
-
     type params_sets
         real, allocatable :: tot_paramsets(:,:), upg_paramsets(:,:), sel_paramsets(:,:) 
     end type params_sets
     type(params_sets), allocatable :: arr_params_set(:)
-    
-    type(mcmc_outVars_type) sel_paramsets_outs_h
-    type(mcmc_outVars_type) sel_paramsets_outs_d
-    type(mcmc_outVars_type) sel_paramsets_outs_m
-    ! total simulation outputs
-    type(mcmc_outVars_type) tot_paramsets_outs_h
-    type(mcmc_outVars_type) tot_paramsets_outs_d
-    type(mcmc_outVars_type) tot_paramsets_outs_m
     
     CHARACTER(len=4) :: str_startyr, str_endyr
     ! integer, parameter :: nRand = 20
@@ -109,49 +29,49 @@ contains
         write(str_startyr,"(I4)")forcing(1)%year
         write(str_endyr,"(I4)")forcing(nforcing)%year
 
-        allocate(arr_params_set(npft))
-        do ipft = 1, npft
+        allocate(arr_params_set(count_pft))
+        do ipft = 1, count_pft
             allocate(arr_params_set(ipft)%tot_paramsets(nDAsimu,npar4DA))
             allocate(arr_params_set(ipft)%sel_paramsets(nRand, npar4DA))    ! select 500 parameter sets
         enddo
 
-        if (do_mc_out_hr) then
-            call allocate_mcmc_outs_type(nRand, nHours,  sel_paramsets_outs_h)
-            call allocate_mcmc_outs_type(nDAsimu, nHours,  tot_paramsets_outs_h)
-        endif
+        ! if (do_mc_out_hr) then
+        !     call allocate_mcmc_outs_type(nRand, nHours,  sel_paramsets_outs_h)
+        !     call allocate_mcmc_outs_type(nDAsimu, nHours,  tot_paramsets_outs_h)
+        ! endif
         if (do_mc_out_day) then
             call allocate_mcmc_outs_type(nRand, nDays,   sel_paramsets_outs_d)
             call allocate_mcmc_outs_type(nDAsimu, nDays,   tot_paramsets_outs_d)
         endif
-        if (do_mc_out_mon) then
-            call allocate_mcmc_outs_type(nRand, nMonths, sel_paramsets_outs_m)
-            call allocate_mcmc_outs_type(nDAsimu, nMonths, tot_paramsets_outs_m)
-        endif
+        ! if (do_mc_out_mon) then
+        !     call allocate_mcmc_outs_type(nRand, nMonths, sel_paramsets_outs_m)
+        !     call allocate_mcmc_outs_type(nDAsimu, nMonths, tot_paramsets_outs_m)
+        ! endif
         ! allocate the total simulation results
     end subroutine init_mcmc_outputs
 
-    subroutine mcmc_param_outputs(nUpgraded, npar4DA, parnames, DAparidx)
+    subroutine mcmc_param_outputs(nUpgraded, npar4DA, parnames)!, DAparidx)
         implicit none
         integer, intent(in) :: nUpgraded, npar4DA
         integer nBuilt_in, ipar, nline, iline, inum
         character(250) :: outfile_mc_ParamSets
         character(*), intent(in) :: parnames(:)
-        integer, intent(in) :: DAparidx(:)
-        character(20), allocatable :: DA_parname(:)
+        ! integer, allocatable :: DAparidx(:)
+        ! character(20), allocatable :: DA_parname(:)
         character(1200) :: header_line
         integer :: ipft, npft
 
-        allocate(DA_parname(npar4DA))
-        header_line = ""
-        do ipar = 1, npar4DA
-            DA_parname(ipar) = parnames(DAparidx(ipar))
-            header_line   = trim(header_line)//","//trim(parnames(DAparidx(ipar)))
-        enddo
-
+        ! allocate(DA_parname(npar4DA))
+        
         ! delete the built-in
         nBuilt_in = int(0.1*nUpgraded)
         if (nBuilt_in .lt. 1) nBuilt_in = 1
-        do ipft = 1, npft
+        do ipft = 1, count_pft
+            header_line = ""
+            do ipar = 1, npar4DA
+                ! DA_parname(ipar) = parnames(mc_DApar(ipft)%DAparidx(ipar))
+                header_line   = trim(header_line)//","//trim(parnames(mc_DApar(ipft)%DAparidx(ipar)))
+            enddo
             allocate(arr_params_set(ipft)%upg_paramsets(nUpgraded - nBuilt_in, npar4DA))
             arr_params_set(ipft)%upg_paramsets = arr_params_set(ipft)%tot_paramsets(nBuilt_in:nUpgraded, :)
             ! write(*,*)"test_all", nBuilt_in, nUpgraded, size(tot_paramsets,1), size(tot_paramsets,2)
@@ -168,18 +88,18 @@ contains
         ! choose the random 100 parameter sets and simulations
         call generate_random_numbers(1, nUpgraded - nBuilt_in, rand_number)
 
-        do ipft = 1, npft
+        do ipft = 1, count_pft
             do inum = 1, nRand
                 arr_params_set(ipft)%sel_paramsets(inum, :) = arr_params_set(ipft)%upg_paramsets(rand_number(inum),:)
-                if (do_mc_out_hr) then
-                    call select_mcmc_simu_outputs(rand_number(inum), inum, tot_paramsets_outs_h, sel_paramsets_outs_h)
-                endif
+                ! if (do_mc_out_hr) then
+                !     call select_mcmc_simu_outputs(rand_number(inum), inum, tot_paramsets_outs_h, sel_paramsets_outs_h)
+                ! endif
                 if (do_mc_out_day) then
                     call select_mcmc_simu_outputs(rand_number(inum), inum, tot_paramsets_outs_d, sel_paramsets_outs_d)
                 endif
-                if (do_mc_out_mon) then
-                    call select_mcmc_simu_outputs(rand_number(inum), inum, tot_paramsets_outs_m, sel_paramsets_outs_m)
-                endif
+                ! if (do_mc_out_mon) then
+                !     call select_mcmc_simu_outputs(rand_number(inum), inum, tot_paramsets_outs_m, sel_paramsets_outs_m)
+                ! endif
             enddo
 
             outfile_mc_ParamSets = adjustl(trim(outDir_mcmc))//"/"//adjustl(trim("sel_parameter_sets_"))&
@@ -193,19 +113,19 @@ contains
         enddo
 
         ! save the selected simulations to nc format results
-        if (do_mc_out_hr) then
-            call write_outputs_nc(outDir_mcmc_h, nRand, nHours,  sel_paramsets_outs_h, "hourly")
-        endif
+        ! if (do_mc_out_hr) then
+        !     call write_outputs_nc(outDir_mcmc_h, nRand, nHours,  sel_paramsets_outs_h, "hourly")
+        ! endif
         if (do_mc_out_day) then
             call write_outputs_nc(outDir_mcmc_d, nRand, nDays,   sel_paramsets_outs_d, "daily")
         endif
-        if (do_mc_out_mon) then
-            call write_outputs_nc(outDir_mcmc_m, nRand, nMonths, sel_paramsets_outs_m, "monthly")
-        endif
+        ! if (do_mc_out_mon) then
+        !     call write_outputs_nc(outDir_mcmc_m, nRand, nMonths, sel_paramsets_outs_m, "monthly")
+        ! endif
 
         ! deallocate
-        deallocate(DA_parname)
-        do ipft = 1, npft
+        ! deallocate(DA_parname)
+        do ipft = 1, count_pft
             deallocate(arr_params_set(ipft)%upg_paramsets)
         enddo
     end subroutine mcmc_param_outputs
@@ -369,6 +289,11 @@ contains
         character(*), intent(in) :: mc_outdir, str_freq
         integer, intent(in) :: ntime, nSimuLen
         type(mcmc_outVars_type), intent(in) :: write_data
+        integer ipft
+
+        do ipft = 1, npft
+            
+        enddo 
 
         call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%gpp,    &
             "gpp",     "kgC m-2 s-1", "gross primary productivity", str_freq, 1)
@@ -616,6 +541,41 @@ contains
         ! 
         integer, intent(in) :: ntime, nSimuLen
         type(mcmc_outVars_type), intent(out) :: dataType
+        integer :: ipft
+
+        allocate(dataType%allSpec(count_pft))
+        do ipft = 1, count_pft
+            allocate(dataType%allSpec(ipft)%gpp(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%nee(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%npp(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%nppLeaf(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%nppWood(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%nppStem(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%nppRoot(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%nppOther(ntime, nSimuLen))    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+            allocate(dataType%allSpec(ipft)%ra(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%raLeaf(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%raStem(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%raRoot(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%raOther(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%rMaint(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%rGrowth(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%nbp(ntime, nSimuLen))
+            ! Carbon Pools  (KgC m-2)
+            allocate(dataType%allSpec(ipft)%cLeaf(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%cStem(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%cRoot(ntime, nSimuLen))
+            ! Nitrogen pools (kgN m-2)
+            allocate(dataType%allSpec(ipft)%nLeaf(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%nStem(ntime, nSimuLen))
+            allocate(dataType%allSpec(ipft)%nRoot(ntime, nSimuLen))
+            ! allocate(dataType%allSpec(ipft)%nOther(:)
+            ! water fluxes (kg m-2 s-1)
+            allocate(dataType%allSpec(ipft)%tran(ntime, nSimuLen))
+            ! other
+            allocate(dataType%allSpec(ipft)%lai(ntime, nSimuLen)) 
+        enddo
+
         allocate(dataType%gpp(ntime, nSimuLen))
         allocate(dataType%nee(ntime, nSimuLen))
         allocate(dataType%npp(ntime, nSimuLen))
@@ -688,8 +648,44 @@ contains
 
     subroutine deallocate_mcmc_outs_type(dataType)
         type(mcmc_outVars_type), intent(inout) :: dataType
+        integer :: ipft
 
         if(allocated(rand_number)) deallocate(rand_number)
+
+        if (allocated(dataType%allSpec)) then
+            do ipft = 1, count_pft
+                if (allocated(dataType%allSpec(ipft)%gpp)) deallocate(dataType%allSpec(ipft)%gpp)
+                if (allocated(dataType%allSpec(ipft)%nee)) deallocate(dataType%allSpec(ipft)%nee)
+                if (allocated(dataType%allSpec(ipft)%npp)) deallocate(dataType%allSpec(ipft)%npp)
+                if (allocated(dataType%allSpec(ipft)%nppLeaf)) deallocate(dataType%allSpec(ipft)%nppLeaf)
+                if (allocated(dataType%allSpec(ipft)%nppWood)) deallocate(dataType%allSpec(ipft)%nppWood)
+                if (allocated(dataType%allSpec(ipft)%nppStem)) deallocate(dataType%allSpec(ipft)%nppStem)
+                if (allocated(dataType%allSpec(ipft)%nppRoot)) deallocate(dataType%allSpec(ipft)%nppRoot)
+                if (allocated(dataType%allSpec(ipft)%nppOther)) deallocate(dataType%allSpec(ipft)%nppOther)   ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+                if (allocated(dataType%allSpec(ipft)%ra))  deallocate(dataType%allSpec(ipft)%ra)
+                if (allocated(dataType%allSpec(ipft)%raLeaf))  deallocate(dataType%allSpec(ipft)%raLeaf)
+                if (allocated(dataType%allSpec(ipft)%raStem))  deallocate(dataType%allSpec(ipft)%raStem)
+                if (allocated(dataType%allSpec(ipft)%raRoot))  deallocate(dataType%allSpec(ipft)%raRoot)
+                if (allocated(dataType%allSpec(ipft)%raOther))  deallocate(dataType%allSpec(ipft)%raOther)
+                if (allocated(dataType%allSpec(ipft)%rMaint))   deallocate(dataType%allSpec(ipft)%rMaint)
+                if (allocated(dataType%allSpec(ipft)%rGrowth))  deallocate(dataType%allSpec(ipft)%rGrowth)
+                if (allocated(dataType%allSpec(ipft)%nbp))      deallocate(dataType%allSpec(ipft)%nbp)
+                ! Carbon Pools  (KgC m-2)
+                if (allocated(dataType%allSpec(ipft)%cLeaf))  deallocate(dataType%allSpec(ipft)%cLeaf)
+                if (allocated(dataType%allSpec(ipft)%cStem))  deallocate(dataType%allSpec(ipft)%cStem)
+                if (allocated(dataType%allSpec(ipft)%cRoot))  deallocate(dataType%allSpec(ipft)%cRoot)
+                ! Nitrogen pools (kgN m-2)
+                if (allocated(dataType%allSpec(ipft)%nLeaf))  deallocate(dataType%allSpec(ipft)%nLeaf)
+                if (allocated(dataType%allSpec(ipft)%nStem))  deallocate(dataType%allSpec(ipft)%nStem)
+                if (allocated(dataType%allSpec(ipft)%nRoot))  deallocate(dataType%allSpec(ipft)%nRoot)
+                ! if (allocated(dataType%allSpec(ipft)%nOther(:)
+                ! water fluxes (kg m-2 s-1)
+                if (allocated(dataType%allSpec(ipft)%tran)) deallocate(dataType%allSpec(ipft)%tran)
+                ! other 
+                if (allocated(dataType%allSpec(ipft)%lai)) deallocate(dataType%allSpec(ipft)%lai)
+            enddo
+            deallocate(dataType%allSpec)
+        endif
 
         if (allocated(dataType%gpp))            deallocate(dataType%gpp)
         if (allocated(dataType%nee))            deallocate(dataType%nee)

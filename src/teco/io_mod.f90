@@ -119,14 +119,14 @@ module io_mod
         outvars%fNnetmin        = outvars%fNnetmin + st%fNnetmin*convert_g2kg*convert_h2s/ntime 
         outvars%fNdep           = outvars%fNdep + st%N_deposit*convert_g2kg*convert_h2s/ntime 
         ! Nitrogen pools (kgN m-2)
-        outvars%nLeaf           = outvars%nLeaf + st%QN(1)*convert_g2kg/ntime
-        outvars%nStem           = outvars%nStem + st%QN(2)*convert_g2kg/ntime
-        outvars%nRoot           = outvars%nRoot + st%QN(3)*convert_g2kg/ntime
-        outvars%nOther          = outvars%nOther + vegn%NSN*convert_g2kg/ntime
-        outvars%nLitter         = outvars%nLitter + st%QN(4)*convert_g2kg/ntime
+        outvars%nLeaf           = outvars%nLeaf      + st%QN(1)*convert_g2kg/ntime
+        outvars%nStem           = outvars%nStem      + st%QN(2)*convert_g2kg/ntime
+        outvars%nRoot           = outvars%nRoot      + st%QN(3)*convert_g2kg/ntime
+        outvars%nOther          = outvars%nOther     + vegn%NSN*convert_g2kg/ntime
+        outvars%nLitter         = outvars%nLitter    + st%QN(4)*convert_g2kg/ntime
         outvars%nLitterCwd      = outvars%nLitterCwd + st%QN(5)*convert_g2kg/ntime
-        outvars%nSoil           = outvars%nSoil + (st%QN(6)+st%QN(7)+st%QN(8))*convert_g2kg/ntime
-        outvars%nMineral        = outvars%nMineral + st%QNminer*convert_g2kg/ntime 
+        outvars%nSoil           = outvars%nSoil      + (st%QN(6)+st%QN(7)+st%QN(8))*convert_g2kg/ntime
+        outvars%nMineral        = outvars%nMineral   + st%QNminer*convert_g2kg/ntime 
         ! energy fluxes (W m-2)
         outvars%hfls            = outvars%hfls + st%Hsoil/ntime ! Sensible heat flux;
         outvars%hfss            = outvars%hfss + st%Esoil/ntime ! Latent heat flux;

@@ -69,6 +69,7 @@ module driver
         endif
         
         do iclim = 1, nforcing 
+            ! if(iclim > 10) stop
             if (iclim .eq. 1) then
                 year0       = first_year             ! Jian: record whether it is a new year.
                 iTotHourly  = 1
@@ -307,9 +308,6 @@ module driver
             ! call updateHourly(vegn, iclim, iyear, iday, ihour)    ! hourly simulation
             call init_hourly()
             call updateOutVars(vegn, outvars_h, 1, iyear, iday, ihour)
-            if(do_out_csv) then
-                if(do_out_hr) call write_data_csv(unit_h, outVars_h)
-            endif
 
             ! call updateDaily(vegn, iTotDaily, iyear, iday, ihour)
             call updateOutVars(vegn, outvars_d, 24, iyear, iday, ihour)
@@ -320,6 +318,9 @@ module driver
 
             if (do_mcmc) call GetSimuData(iyear, iday, ihour, vegn, iclim, iTotDaily, iTotMonthly, iTotYearly)
 
+            if(do_out_csv) then
+                if(do_out_hr) call write_data_csv(unit_h, outVars_h)
+            endif
             
             if (ihour .eq. 23) then
                 if(do_out_csv) then 

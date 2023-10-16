@@ -212,15 +212,15 @@ subroutine createNewCase()
         outDir_mcmc = adjustl(trim(outdir_case))//"/"//adjustl(trim(outDir_mcmc))
         call CreateFolder(adjustl(trim(outDir_mcmc)))
         ! if (do_mc_out_hr)then
-            outDir_mcmc_h = adjustl(trim(outDir_mcmc))//"/"//adjustl(trim(outDir_mcmc_h))
+            outDir_mcmc_h = adjustl(trim(outDir_mcmc))//"/results_mcmc_Hourly"
             call CreateFolder(adjustl(trim(outDir_mcmc_h)))
         ! endif
         ! if (do_mc_out_day) then
-            outDir_mcmc_d = adjustl(trim(outDir_mcmc))//"/"//adjustl(trim(outDir_mcmc_d))
+            outDir_mcmc_d = adjustl(trim(outDir_mcmc))//"/results_mcmc_Daily"
             call CreateFolder(adjustl(trim(outDir_mcmc_d)))
         ! endif
         ! if (do_mc_out_mon) then
-            outDir_mcmc_m = adjustl(trim(outDir_mcmc))//"/"//adjustl(trim(outDir_mcmc_m))
+            outDir_mcmc_m = adjustl(trim(outDir_mcmc))//"/results_mcmc_Monthly"
             call CreateFolder(adjustl(trim(outDir_mcmc_m)))
         ! endif
     endif

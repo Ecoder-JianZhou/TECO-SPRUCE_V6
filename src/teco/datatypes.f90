@@ -183,7 +183,7 @@ module datatypes
         real :: methanebP(nlayers), methaneP(nlayers)
         ! N cycle
         real :: Rnitrogen, N_miner, N_transfer, N_uptake, N_fixation
-        real :: N_leach, N_vol, N_loss
+        real :: N_leach, N_vol, N_loss, N_immob
         real :: fNnetmin
     end type site_data_type
     type(site_data_type) :: st
@@ -216,7 +216,7 @@ module datatypes
         real :: GLmax, GSmax, GRmax
         ! flux 
         real :: gpp, npp
-        real :: transp
+        real :: transp, plantup(10)
         real :: evap
         real :: RmLeaf, RmStem, RmRoot, Rmain, Rauto
         real :: Rgrowth
@@ -252,7 +252,7 @@ module datatypes
         ! total flux
         real :: gpp, npp
         real :: NPP_L, NPP_W, NPP_R
-        real :: transp
+        real :: transp, plantup(10)
         real :: evap
         real :: RmLeaf, RmStem, RmRoot, Rmain
         real :: Rauto, Rgrowth

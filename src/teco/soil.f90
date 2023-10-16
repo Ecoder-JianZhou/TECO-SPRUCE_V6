@@ -12,7 +12,7 @@ module soil
         real infilt_max
         real DWCL(10), evapl(10), wupl(10), Tr_ratio(10)
         real SRDT(10), rain_new, rain_t
-        integer nfr, i
+        integer nfr, i, ipft, npft
         real infilt_dbmemo, twtadd, wtadd, omegaL(10)
         real exchangeL,supply,demand
         real Tsrdt, tr_allo
@@ -114,7 +114,7 @@ module soil
         enddo
         
         st%wsc(10) = st%wsc(10) - st%wsc(10)*0.00001     ! Shuang modifed
-        st%runoff  = st%runoff  + st%wsc(10)*0.00001     ! Shuang modifed
+        ! st%runoff  = st%runoff  + st%wsc(10)*0.00001     ! Shuang modifed
         st%wcl(10) = st%wsc(10)/(st%THKSL(10)*10.0)+WILTPT_x
         ! end of water redistribution among soil layers
         ! Redistribute evaporation among soil layers
@@ -143,16 +143,24 @@ module soil
             tr_allo     = tr_allo+tr_ratio(i)
         enddo
         ! write(*,*)"test ...", transp,tr_ratio
-        do i=1,nfr
-            plantup(i) = AMIN1(vegn%transp*tr_ratio(i)/tr_allo, st%wsc(i)) !mm          
-            wupl(i)    = plantup(i)/(st%THKSL(i)*10.0)
-            st%wcl(i)  = st%wcl(i)-wupl(i)
+        npft = vegn%npft
+        do ipft = 1, npft
+            do i=1,nfr
+                plantup(i) = AMIN1(vegn%allSp(ipft)%transp*tr_ratio(i)/tr_allo, 0.33*st%wsc(i)) !mm          
+                wupl(i)    = plantup(i)/(st%THKSL(i)*10.0)
+                st%wcl(i)  = st%wcl(i)-wupl(i)
+            enddo
+            vegn%allSp(ipft)%transp = 0.0
+            do i=1,nfr
+                vegn%allSp(ipft)%transp = vegn%allSp(ipft)%transp + plantup(i)
+            enddo
+            if(ipft .eq. 1)then
+                vegn%transp = vegn%allSp(ipft)%transp
+            else
+                vegn%transp = vegn%transp + vegn%allSp(ipft)%transp
+            endif
         enddo
-        vegn%transp = 0.0
-        do i=1,nfr
-            vegn%transp = vegn%transp + plantup(i)
-        enddo
-
+        
         ! Jian: readd water according to evaporation, transpiration and soil moisture.
         st%infilt = st%infilt + amax1(0.0,(1-st%omega)*vegn%transp)
         st%infilt = st%infilt + amax1(0.0,(1-st%omega)*st%evap)
@@ -960,8 +968,9 @@ module soil
                         Ebu_sum_unsat=Ebu_sum_unsat+EbuCH4(i)         
                         st%CH4(i)=st%CH4(i)- EbuCH4(i) 
                     else
+                        wtlevelindex = i
                         if (((st%depth(i)*10.0)-(st%THKSL(i)*10.0)) .lt. -st%zwt) then       !partly acrotelm layer
-                            wtlevelindex = i
+                            
                             if (st%CH4(i) .gt. CH4_thre_ly(i)) then                  
                                 EbuCH4(i)=Kebu*(st%CH4(i)-CH4_thre_ly(i))!*(((st%depth(i)*10.0)-(-zwt))/(THKSL(i)*10.0))        ! * percent
                             else 

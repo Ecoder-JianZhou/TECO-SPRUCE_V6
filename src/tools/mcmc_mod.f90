@@ -5,7 +5,7 @@ module mcmc_mod
 
     ! parameters and observation files
 
-    integer npar, nDAsimu, ncov, nRand, nSpecParams
+    integer npar, nDAsimu, ncov, nRand, nSpecParams,upgraded
     real search_scale
     logical :: do_mc_out_hr, do_mc_out_day, do_mc_out_mon, do_mc_out_yr
 
@@ -48,21 +48,47 @@ module mcmc_mod
     end type params_mcmc
     type(params_mcmc), allocatable :: mc_parvals(:)
 
+    type params_DApar
+        real, allocatable :: DAparmin(:)
+        real, allocatable :: DAparmax(:)
+        real, allocatable :: DApar(:)
+        real, allocatable :: DApar_old(:)
+        integer, allocatable :: DAparidx(:)
+        real, allocatable :: gamma(:,:)
+        real, allocatable :: gamnew(:,:)
+        real, allocatable :: coefhistory(:,:)
+        real, allocatable :: coefnorm(:)
+        real, allocatable :: coefac(:)
+    end type params_DApar
+    type(params_DApar), allocatable :: mc_DApar(:)          ! all variables for DATA ASSIMILATION
 
     ! type(nml_params_data_type) :: in_params, in_parval, in_parval_min, in_parval_max
     ! real, allocatable :: parval(:), parmin(:), parmax(:)
     character(20), allocatable :: parnames(:)
 
     ! observational file path
-    character(500) :: obsfile_gpp_d, obsfile_nee_d, obsfile_reco_d
-    character(500) :: obsfile_gpp_h, obsfile_nee_h, obsfile_reco_h
-    ! methane   
-    character(500) :: obsfile_ch4_h
-    ! c pools
-    character(500) :: obsfile_cleaf, obsfile_cwood 
-
-    character(500) :: obsfile_anpp_y(3), obsfile_bnpp_y
-    character(500) :: obsfile_lai_h(3)
+    character(500) :: obsfile_ANPP_Shrub_y
+    character(500) :: obsfile_ANPP_Tree_y
+    character(500) :: obsfile_NPP_sphag_y
+    character(500) :: obsfile_BNPP_y        ! tree + shrub
+    character(500) :: obsfile_er_d          ! shrub + sphag.
+    character(500) :: obsfile_er_h          ! shrub + sphag.
+    character(500) :: obsfile_gpp_d         ! Shrub + sphag.
+    character(500) :: obsfile_nee_d         ! Shrub + sphag.
+    character(500) :: obsfile_nee_h         ! shrub + sphag.
+    character(500) :: obsfile_LAI_d         ! tree  + Shrub
+    !
+    character(500) :: obsfile_leaf_mass_shrub_y
+    character(500) :: obsfile_stem_mass_shrub_y
+    character(500) :: obsfile_leaf_resp_shrub_d 
+    character(500) :: obsfile_leaf_resp_tree_d 
+    ! methane
+    character(500) :: obsfile_ch4_d 
+    character(500) :: obsfile_ch4_h 
+    ! 
+    character(500) :: obsfile_CN_shag_d 
+    character(500) :: obsfile_photo_shrub_d 
+    character(500) :: obsfile_photo_tree_d  
 
     ! variables for calculating the cost in MCMC processes
     type interCostVariable
@@ -70,32 +96,34 @@ module mcmc_mod
         logical :: existOrNot
         real, allocatable :: obsData(:,:)
         real, allocatable :: mdData(:,:)
+        integer :: mc_itime
     end type interCostVariable
-
-    type spec_interCostVariable
-        ! for different species
-        type(interCostVariable) :: anpp_y
-        ! type(interCostVariable) :: bnpp_y
-        type(interCostVariable) :: lai_h
-    end type spec_interCostVariable
 
     type allCostVariables
     ! default variables, you can add the variable names here. (year, doy, hour, value, std.)
         ! carbon flux 
-        type(interCostVariable) :: gpp_d    ! shagnum, shrub
-        type(interCostVariable) :: nee_d    ! shagnum, shrub
-        type(interCostVariable) :: reco_d   ! shagnum, shrub
-        type(interCostVariable) :: gpp_h    ! shagnum, shrub
-        type(interCostVariable) :: nee_h    ! shagnum, shrub
-        type(interCostVariable) :: reco_h   ! shagnum, shrub
+        type(interCostVariable) :: ANPP_Shrub_y
+        type(interCostVariable) :: ANPP_Tree_y
+        type(interCostVariable) :: NPP_sphag_y
+        type(interCostVariable) :: BNPP_y        ! tree + shrub
+        type(interCostVariable) :: er_d          ! shrub + sphag.
+        type(interCostVariable) :: er_h          ! shrub + sphag.
+        type(interCostVariable) :: gpp_d         ! Shrub + sphag.
+        type(interCostVariable) :: nee_d         ! Shrub + sphag.
+        type(interCostVariable) :: nee_h         ! shrub + sphag.
+        type(interCostVariable) :: LAI_d         ! tree  + Shrub
+        !
+        type(interCostVariable) :: leaf_mass_shrub_y
+        type(interCostVariable) :: stem_mass_shrub_y
+        type(interCostVariable) :: leaf_resp_shrub_d 
+        type(interCostVariable) :: leaf_resp_tree_d 
         ! methane
-        type(interCostVariable) :: ch4_h
-        ! c pools
-        type(interCostVariable) :: cleaf    ! foliage
-        type(interCostVariable) :: cwood
-        ! BNPP
-        type(interCostVariable) :: bnpp_y
-        type(spec_interCostVariable), allocatable :: spec_vars(:)
+        type(interCostVariable) :: ch4_d 
+        type(interCostVariable) :: ch4_h 
+        ! 
+        type(interCostVariable) :: CN_shag_d 
+        type(interCostVariable) :: photo_shrub_d 
+        type(interCostVariable) :: photo_tree_d 
     end type allCostVariables
 
     type(allCostVariables) :: vars4MCMC      ! define a allCostVariables first
@@ -108,25 +136,146 @@ module mcmc_mod
     integer mc_itime_npp_y, mc_itime_reco_y
     integer mc_iyear,  mc_iday, mc_ihour
 
+    type mcmc_spec_outvars_type
+        ! carbon fluxes (Kg C m-2 s-1)
+        real, allocatable :: gpp(:, :)
+        real, allocatable :: nee(:, :)
+        real, allocatable :: npp(:, :)
+        real, allocatable :: nppLeaf(:, :)
+        real, allocatable :: nppWood(:, :)
+        real, allocatable :: nppStem(:, :)
+        real, allocatable :: nppRoot(:, :)
+        real, allocatable :: nppOther(:, :)    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+        real, allocatable :: ra(:, :)
+        real, allocatable :: raLeaf(:, :)
+        real, allocatable :: raStem(:, :)
+        real, allocatable :: raRoot(:, :)
+        real, allocatable :: raOther(:, :)
+        real, allocatable :: rMaint(:, :)
+        real, allocatable :: rGrowth(:, :)
+        real, allocatable :: nbp(:, :)
+        ! Carbon Pools  (KgC m-2)
+        real, allocatable :: cLeaf(:, :)
+        real, allocatable :: cStem(:, :)
+        real, allocatable :: cRoot(:, :)
+        ! Nitrogen pools (kgN m-2)
+        real, allocatable :: nLeaf(:, :)
+        real, allocatable :: nStem(:, :)
+        real, allocatable :: nRoot(:, :)
+        ! real, allocatable :: nOther(:)
+        ! water fluxes (kg m-2 s-1)
+        real, allocatable :: tran(:, :)
+        ! other
+        real, allocatable :: lai(:, :)                     ! m2 m-2, Leaf area index
+    end type mcmc_spec_outvars_type
+
+    type mcmc_outVars_type
+        type(mcmc_spec_outvars_type), allocatable :: allSpec(:)
+        ! carbon fluxes (Kg C m-2 s-1)
+        real, allocatable :: gpp(:, :)
+        real, allocatable :: nee(:, :)
+        real, allocatable :: npp(:, :)
+        real, allocatable :: nppLeaf(:, :)
+        real, allocatable :: nppWood(:, :)
+        real, allocatable :: nppStem(:, :)
+        real, allocatable :: nppRoot(:, :)
+        real, allocatable :: nppOther(:, :)           ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+        real, allocatable :: ra(:, :)
+        real, allocatable :: raLeaf(:, :)
+        real, allocatable :: raStem(:, :)
+        real, allocatable :: raRoot(:, :)
+        real, allocatable :: raOther(:, :)
+        real, allocatable :: rMaint(:, :)
+        real, allocatable :: rGrowth(:, :)            ! maintenance respiration and growth respiration
+        real, allocatable :: rh(:, :)
+        real, allocatable :: nbp(:, :)                ! heterotrophic respiration. NBP(net biome productivity) = GPP - Rh - Ra - other losses  
+        real, allocatable :: wetlandCH4(:, :)
+        real, allocatable :: wetlandCH4prod(:, :)
+        real, allocatable :: wetlandCH4cons(:, :)     ! wetland net fluxes of CH4, CH4 production, CH4 consumption
+        ! Carbon Pools  (KgC m-2)
+        real, allocatable :: cLeaf(:, :)
+        real, allocatable :: cStem(:, :)
+        real, allocatable :: cRoot(:, :)
+        real, allocatable :: cOther(:, :)              ! cOther: carbon biomass in other plant organs(reserves, fruits), Jian: maybe NSC storage in TECO?
+        real, allocatable :: cLitter(:, :)
+        real, allocatable :: cLitterCwd(:, :)          ! litter (excluding coarse woody debris), Jian: fine litter in TECO?, cLitterCwd: carbon in coarse woody debris
+        real, allocatable :: cSoil(:, :)
+        real, allocatable :: cSoilLevels(:, :, :)
+        real, allocatable :: cSoilFast(:, :)
+        real, allocatable :: cSoilSlow(:, :)
+        real, allocatable :: cSoilPassive(:, :)           ! cSoil: soil organic carbon (Jian: total soil carbon); cSoilLevels(depth-specific soil organic carbon, Jian: depth?); cSoilPools (different pools without depth)
+        real, allocatable :: CH4(:, :, :)          ! methane concentration
+        ! Nitrogen fluxes (kgN m-2 s-1)
+        real, allocatable :: fBNF(:, :)
+        real, allocatable :: fN2O(:, :)
+        real, allocatable :: fNloss(:, :)
+        real, allocatable :: fNnetmin(:, :)
+        real, allocatable :: fNdep(:, :)                   ! fBNF: biological nitrogen fixation; fN2O: loss of nitrogen through emission of N2O; fNloss:Total loss of nitrogen to the atmosphere and from leaching; net mineralizaiton and deposition of N
+        ! Nitrogen pools (kgN m-2)
+        real, allocatable :: nLeaf(:, :)
+        real, allocatable :: nStem(:, :)
+        real, allocatable :: nRoot(:, :)
+        real, allocatable :: nOther(:, :)
+        real, allocatable :: nLitter(:, :)
+        real, allocatable :: nLitterCwd(:, :)
+        real, allocatable :: nSoil(:, :)
+        real, allocatable :: nMineral(:, :)                ! nMineral: Mineral nitrogen pool
+        ! energy fluxes (W m-2)
+        real, allocatable :: hfls(:, :)
+        real, allocatable :: hfss(:, :)
+        real, allocatable :: SWnet(:, :)
+        real, allocatable :: LWnet(:, :)                   ! Sensible heat flux; Latent heat flux; Net shortwave radiation; Net longwave radiation
+        ! water fluxes (kg m-2 s-1)
+        real, allocatable :: ec(:, :)
+        real, allocatable :: tran(:, :)
+        real, allocatable :: es(:, :)                      ! Canopy evaporation; Canopy transpiration; Soil evaporation
+        real, allocatable :: hfsbl(:, :)                   ! Snow sublimation
+        real, allocatable :: mrro(:, :)
+        real, allocatable :: mrros(:, :)
+        real, allocatable :: mrrob(:, :)                   ! Total runoff; Surface runoff; Subsurface runoff
+        ! other
+        real, allocatable :: mrso(:, :, :)           ! Kg m-2, soil moisture in each soil layer
+        real, allocatable :: tsl(:, :, :)            ! K, soil temperature in each soil layer
+        real, allocatable :: tsland(:, :)                  ! K, surface temperature
+        real, allocatable :: wtd(:, :)                     ! m, Water table depth
+        real, allocatable :: snd(:, :)                     ! m, Total snow depth
+        real, allocatable :: lai(:, :)                     ! m2 m-2, Leaf area index            
+    end type mcmc_outVars_type
+
+    type(mcmc_outVars_type) sel_paramsets_outs_h
+    type(mcmc_outVars_type) sel_paramsets_outs_d
+    type(mcmc_outVars_type) sel_paramsets_outs_m
+    ! total simulation outputs
+    type(mcmc_outVars_type) tot_paramsets_outs_h
+    type(mcmc_outVars_type) tot_paramsets_outs_d
+    type(mcmc_outVars_type) tot_paramsets_outs_m
+
     contains
 
     subroutine mcmc_functions_init()
         implicit none
-        mc_itime_gpp_d  = 1
-        mc_itime_nee_d  = 1 
-        mc_itime_reco_d = 1
-        mc_itime_gpp_h  = 1
-        mc_itime_nee_h  = 1
-        mc_itime_reco_h = 1
-        mc_itime_ch4_h  = 1
-        mc_itime_cleaf  = 1
-        mc_itime_cwood  = 1
+        vars4MCMC%ANPP_Shrub_y%mc_itime = 1
+        vars4MCMC%ANPP_Tree_y%mc_itime  = 1
+        vars4MCMC%NPP_sphag_y%mc_itime  = 1
+        vars4MCMC%BNPP_y%mc_itime       = 1
+        vars4MCMC%er_d%mc_itime         = 1
+        vars4MCMC%er_h%mc_itime         = 1
+        vars4MCMC%gpp_d%mc_itime        = 1
+        vars4MCMC%nee_d%mc_itime        = 1
+        vars4MCMC%nee_h%mc_itime        = 1
+        vars4MCMC%LAI_d%mc_itime        = 1
+        
+        vars4MCMC%leaf_mass_shrub_y%mc_itime = 1
+        vars4MCMC%stem_mass_shrub_y%mc_itime = 1
+        vars4MCMC%leaf_resp_shrub_d%mc_itime = 1
+        vars4MCMC%leaf_resp_tree_d%mc_itime  = 1 
 
-        mc_itime_anpp_y = 1
-        mc_itime_bnpp_y = 1 
-        mc_itime_lai_h  = 1
-        mc_itime_npp_y  = 1
-        mc_itime_reco_y = 1
+        vars4MCMC%ch4_d%mc_itime = 1
+        vars4MCMC%ch4_h%mc_itime = 1
+
+        vars4MCMC%CN_shag_d%mc_itime     = 1
+        vars4MCMC%photo_shrub_d%mc_itime = 1
+        vars4MCMC%photo_tree_d%mc_itime  = 1
 
         mc_iyear = 1
         mc_iday  = 1
@@ -154,10 +303,11 @@ module mcmc_mod
         character(20) :: parnames_51, parnames_52, parnames_53, parnames_54, parnames_55 
         character(20) :: parnames_56, parnames_57, parnames_58, parnames_59, parnames_60 
 
-        namelist /nml_obsfiles/ obsfile_gpp_d, obsfile_nee_d, obsfile_reco_d, &
-                obsfile_gpp_h, obsfile_nee_h, obsfile_reco_h, obsfile_ch4_h, &
-                obsfile_cleaf, obsfile_cwood, obsfile_anpp_y, obsfile_bnpp_y, & 
-                obsfile_lai_h
+        namelist /nml_obsfiles/ obsfile_ANPP_Shrub_y, obsfile_ANPP_Tree_y, obsfile_NPP_sphag_y, &
+            obsfile_BNPP_y, obsfile_er_d, obsfile_er_h, obsfile_gpp_d, obsfile_nee_d, &
+            obsfile_nee_h, obsfile_LAI_d, obsfile_leaf_mass_shrub_y, obsfile_stem_mass_shrub_y, &
+            obsfile_leaf_resp_shrub_d, obsfile_leaf_resp_tree_d, obsfile_ch4_d, obsfile_ch4_h,  & 
+            obsfile_CN_shag_d, obsfile_photo_shrub_d, obsfile_photo_tree_d
 
         namelist /nml_param_names/parnames_1, parnames_2, parnames_3, parnames_4, parnames_5, & 
                 parnames_6, parnames_7, parnames_8, parnames_9, parnames_10, &
@@ -245,27 +395,29 @@ module mcmc_mod
         parnames(60)  = parnames_60
 
         ! give the filepath to each variable
-        vars4MCMC%gpp_d%filepath  = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_gpp_d))
-        vars4MCMC%nee_d%filepath  = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_nee_d))
-        vars4MCMC%reco_d%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_reco_d))
-        vars4MCMC%gpp_h%filepath  = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_gpp_h))
-        vars4MCMC%nee_h%filepath  = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_nee_h))
-        vars4MCMC%reco_h%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_reco_h))
-        ! methane   
-        vars4MCMC%ch4_h%filepath  = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_ch4_h))
-        ! c pools
-        vars4MCMC%cleaf%filepath  = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_cleaf)) ! foliage
-        vars4MCMC%cwood%filepath  = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_cwood))
-
-        ! BNPP
-        vars4MCMC%bnpp_y%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_bnpp_y))
+        vars4MCMC%ANPP_Shrub_y%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_ANPP_Shrub_y))
+        vars4MCMC%ANPP_Tree_y%filepath  = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_ANPP_Tree_y))
+        vars4MCMC%NPP_sphag_y%filepath  = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_NPP_sphag_y))
+        vars4MCMC%BNPP_y%filepath       = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_BNPP_y))        ! tree + shrub
+        vars4MCMC%er_d%filepath         = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_er_d))          ! shrub + sphag.
+        vars4MCMC%er_h%filepath         = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_er_h))          ! shrub + sphag.
+        vars4MCMC%gpp_d%filepath        = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_gpp_d))         ! Shrub + sphag.
+        vars4MCMC%nee_d%filepath        = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_nee_d))         ! Shrub + sphag.
+        vars4MCMC%nee_h%filepath        = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_nee_h))         ! shrub + sphag.
+        vars4MCMC%LAI_d%filepath        = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_LAI_d))         ! tree  + Shrub
+        !
+        vars4MCMC%leaf_mass_shrub_y%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_leaf_mass_shrub_y))
+        vars4MCMC%stem_mass_shrub_y%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_stem_mass_shrub_y))
+        vars4MCMC%leaf_resp_shrub_d%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_leaf_resp_shrub_d))
+        vars4MCMC%leaf_resp_tree_d%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_leaf_resp_tree_d)) 
+        ! methane
+        vars4MCMC%ch4_d%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_ch4_d))
+        vars4MCMC%ch4_h%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_ch4_h))
+        ! 
+        vars4MCMC%CN_shag_d%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_CN_shag_d))
+        vars4MCMC%photo_shrub_d%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_photo_shrub_d)) 
+        vars4MCMC%photo_tree_d%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_photo_tree_d))
         
-        npft = count_pft
-        allocate(vars4MCMC%spec_vars(npft))
-        do ipft = 1, npft
-            vars4MCMC%spec_vars(ipft)%anpp_y%filepath = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_anpp_y(ipft)))            
-            vars4MCMC%spec_vars(ipft)%lai_h%filepath  = adjustl(trim(inDir))//"/"//adjustl(trim(obsfile_lai_h(ipft)))
-        enddo
         return
     end subroutine readConfsNml
 
@@ -539,136 +691,46 @@ module mcmc_mod
 
     subroutine readObsData()
         implicit none
+        call readObsData_var(vars4MCMC%ANPP_Shrub_y)
+        call readObsData_var(vars4MCMC%ANPP_Tree_y)
+        call readObsData_var(vars4MCMC%NPP_sphag_y)
+        call readObsData_var(vars4MCMC%BNPP_y)        ! tree + shrub
+        call readObsData_var(vars4MCMC%er_d)          ! shrub + sphag.
+        call readObsData_var(vars4MCMC%er_h)          ! shrub + sphag.
+        call readObsData_var(vars4MCMC%gpp_d)         ! Shrub + sphag.
+        call readObsData_var(vars4MCMC%nee_d)         ! Shrub + sphag.
+        call readObsData_var(vars4MCMC%nee_h)         ! shrub + sphag.
+        call readObsData_var(vars4MCMC%LAI_d)         ! tree  + Shrub
+        !
+        call readObsData_var(vars4MCMC%leaf_mass_shrub_y)
+        call readObsData_var(vars4MCMC%stem_mass_shrub_y)
+        call readObsData_var(vars4MCMC%leaf_resp_shrub_d) 
+        call readObsData_var(vars4MCMC%leaf_resp_tree_d) 
+        ! methane
+        call readObsData_var(vars4MCMC%ch4_d) 
+        call readObsData_var(vars4MCMC%ch4_h) 
+        ! 
+        call readObsData_var(vars4MCMC%CN_shag_d) 
+        call readObsData_var(vars4MCMC%photo_shrub_d) 
+        call readObsData_var(vars4MCMC%photo_tree_d) 
+    end subroutine readObsData
+
+    subroutine readObsData_var(var_obsData)
+        implicit none
+        type(interCostVariable), intent(inout) :: var_obsData
         logical toExistOrNot
         integer toCountLines
-        integer :: ipft, npft
-        ! existornot, data 
 
-        ! gpp_d
-        INQUIRE(FILE=vars4MCMC%gpp_d%filepath, EXIST=toExistOrNot)
-        vars4MCMC%gpp_d%existOrNot = toExistOrNot
-        if (vars4MCMC%gpp_d%existOrNot) then
-            call ReadLineNumFromFile(vars4MCMC%gpp_d%filepath, toCountLines)
-            allocate(vars4MCMC%gpp_d%obsData(toCountLines, 5))
-            call ReadObsDataFromFile(vars4MCMC%gpp_d%filepath, toCountLines, vars4MCMC%gpp_d%obsData)
-            allocate(vars4MCMC%gpp_d%mdData(toCountLines, 4))
+        INQUIRE(FILE=var_obsData%filepath, EXIST=toExistOrNot)
+        var_obsData%existOrNot = toExistOrNot
+        if (var_obsData%existOrNot) then
+            call ReadLineNumFromFile(var_obsData%filepath, toCountLines)
+            allocate(var_obsData%obsData(toCountLines, 5))
+            call ReadObsDataFromFile(var_obsData%filepath, toCountLines, var_obsData%obsData)
+            allocate(var_obsData%mdData(toCountLines, 4))
         endif
-        ! nee_d
-        INQUIRE(FILE=vars4MCMC%nee_d%filepath, EXIST=toExistOrNot)
-        vars4MCMC%nee_d%existOrNot = toExistOrNot
-        if (vars4MCMC%nee_d%existOrNot) then
-            call ReadLineNumFromFile(vars4MCMC%nee_d%filepath, toCountLines)
-            allocate(vars4MCMC%nee_d%obsData(toCountLines, 5))
-            call ReadObsDataFromFile(vars4MCMC%nee_d%filepath, toCountLines, vars4MCMC%nee_d%obsData)
-            allocate(vars4MCMC%nee_d%mdData(toCountLines, 4))
-        endif
-        ! reco_d
-        INQUIRE(FILE=vars4MCMC%reco_d%filepath, EXIST=toExistOrNot)
-        vars4MCMC%reco_d%existOrNot = toExistOrNot
-        if (vars4MCMC%reco_d%existOrNot) then
-            call ReadLineNumFromFile(vars4MCMC%reco_d%filepath, toCountLines)
-            allocate(vars4MCMC%reco_d%obsData(toCountLines, 5))
-            call ReadObsDataFromFile(vars4MCMC%reco_d%filepath, toCountLines, vars4MCMC%reco_d%obsData)
-            allocate(vars4MCMC%reco_d%mdData(toCountLines, 4))
-        endif
-        ! gpp_h
-        INQUIRE(FILE=vars4MCMC%gpp_h%filepath, EXIST=toExistOrNot)
-        vars4MCMC%gpp_h%existOrNot = toExistOrNot
-        if (vars4MCMC%gpp_h%existOrNot) then
-            call ReadLineNumFromFile(vars4MCMC%gpp_h%filepath, toCountLines)
-            allocate(vars4MCMC%gpp_h%obsData(toCountLines, 5))
-            call ReadObsDataFromFile(vars4MCMC%gpp_h%filepath, toCountLines, vars4MCMC%gpp_h%obsData)
-            allocate(vars4MCMC%gpp_h%mdData(toCountLines, 4))
-        endif
-        ! nee_h
-        INQUIRE(FILE=vars4MCMC%nee_h%filepath, EXIST=toExistOrNot)
-        vars4MCMC%nee_h%existOrNot = toExistOrNot
-        if (vars4MCMC%nee_h%existOrNot) then
-            call ReadLineNumFromFile(vars4MCMC%nee_h%filepath, toCountLines)
-            allocate(vars4MCMC%nee_h%obsData(toCountLines, 5))
-            call ReadObsDataFromFile(vars4MCMC%nee_h%filepath, toCountLines, vars4MCMC%nee_h%obsData)
-            allocate(vars4MCMC%nee_h%mdData(toCountLines, 4))
-        endif
-        ! reco_h
-        INQUIRE(FILE=vars4MCMC%reco_h%filepath, EXIST=toExistOrNot)
-        vars4MCMC%reco_h%existOrNot = toExistOrNot
-        if (vars4MCMC%reco_h%existOrNot) then
-            call ReadLineNumFromFile(vars4MCMC%reco_h%filepath, toCountLines)
-            allocate(vars4MCMC%reco_h%obsData(toCountLines, 5))
-            call ReadObsDataFromFile(vars4MCMC%reco_h%filepath, toCountLines, vars4MCMC%reco_h%obsData)
-            allocate(vars4MCMC%reco_h%mdData(toCountLines, 4))
-        endif
-        ! ch4_h
-        INQUIRE(FILE=vars4MCMC%ch4_h%filepath, EXIST=toExistOrNot)
-        vars4MCMC%ch4_h%existOrNot = toExistOrNot
-        if (vars4MCMC%ch4_h%existOrNot) then
-            call ReadLineNumFromFile(vars4MCMC%ch4_h%filepath, toCountLines)
-            allocate(vars4MCMC%ch4_h%obsData(toCountLines, 5))
-            call ReadObsDataFromFile(vars4MCMC%ch4_h%filepath, toCountLines, vars4MCMC%ch4_h%obsData)
-            allocate(vars4MCMC%ch4_h%mdData(toCountLines, 4))
-        endif
-        ! cleaf
-        INQUIRE(FILE=vars4MCMC%cleaf%filepath, EXIST=toExistOrNot)
-        vars4MCMC%cleaf%existOrNot = toExistOrNot
-        if (vars4MCMC%cleaf%existOrNot) then
-            call ReadLineNumFromFile(vars4MCMC%cleaf%filepath, toCountLines)
-            allocate(vars4MCMC%cleaf%obsData(toCountLines, 5))
-            call ReadObsDataFromFile(vars4MCMC%cleaf%filepath, toCountLines, vars4MCMC%cleaf%obsData)
-            allocate(vars4MCMC%cleaf%mdData(toCountLines, 4))
-        endif
-        ! cwood
-        INQUIRE(FILE=vars4MCMC%cwood%filepath, EXIST=toExistOrNot)
-        vars4MCMC%cwood%existOrNot = toExistOrNot
-        if (vars4MCMC%cwood%existOrNot) then
-            call ReadLineNumFromFile(vars4MCMC%cwood%filepath, toCountLines)
-            allocate(vars4MCMC%cwood%obsData(toCountLines, 5))
-            call ReadObsDataFromFile(vars4MCMC%cwood%filepath, toCountLines, vars4MCMC%cwood%obsData)
-            allocate(vars4MCMC%cwood%mdData(toCountLines, 4))
-        endif
-
-        ! bnpp_y
-        INQUIRE(FILE=vars4MCMC%bnpp_y%filepath, EXIST=toExistOrNot)
-        vars4MCMC%bnpp_y%existOrNot = toExistOrNot
-        print*,"test path2: ", vars4MCMC%bnpp_y%existOrNot
-        print*,"test path2: ", vars4MCMC%bnpp_y%filepath
-        if (vars4MCMC%bnpp_y%existOrNot) then
-
-            call ReadLineNumFromFile(vars4MCMC%bnpp_y%filepath, toCountLines)
-            allocate(vars4MCMC%bnpp_y%obsData(toCountLines, 5))
-            call ReadObsDataFromFile(vars4MCMC%bnpp_y%filepath, toCountLines, &
-                vars4MCMC%bnpp_y%obsData)
-            allocate(vars4MCMC%bnpp_y%mdData(toCountLines, 4))
-        endif
-
-        npft = count_pft
-        do ipft = 1, npft
-            ! anpp_y
-            INQUIRE(FILE=vars4MCMC%spec_vars(ipft)%anpp_y%filepath, EXIST=toExistOrNot)
-            vars4MCMC%spec_vars(ipft)%anpp_y%existOrNot = toExistOrNot
-            print*,"test path1: ", vars4MCMC%spec_vars(ipft)%anpp_y%existOrNot
-            if (vars4MCMC%spec_vars(ipft)%anpp_y%existOrNot) then
-                print*, "vars4MCMC%spec_vars(ipft)%anpp_y%filepath",vars4MCMC%spec_vars(ipft)%anpp_y%filepath
-                call ReadLineNumFromFile(vars4MCMC%spec_vars(ipft)%anpp_y%filepath, toCountLines)
-                allocate(vars4MCMC%spec_vars(ipft)%anpp_y%obsData(toCountLines, 5))
-                call ReadObsDataFromFile(vars4MCMC%spec_vars(ipft)%anpp_y%filepath, toCountLines, &
-                     vars4MCMC%spec_vars(ipft)%anpp_y%obsData)
-                allocate(vars4MCMC%spec_vars(ipft)%anpp_y%mdData(toCountLines, 4))
-            endif
-
-            ! lai_h
-            INQUIRE(FILE=vars4MCMC%spec_vars(ipft)%lai_h%filepath, EXIST=toExistOrNot)
-            vars4MCMC%spec_vars(ipft)%lai_h%existOrNot = toExistOrNot
-            print*, "test path3: ", vars4MCMC%spec_vars(ipft)%lai_h%existOrNot
-            if (vars4MCMC%spec_vars(ipft)%lai_h%existOrNot) then
-                call ReadLineNumFromFile(vars4MCMC%spec_vars(ipft)%lai_h%filepath, toCountLines)
-                allocate(vars4MCMC%spec_vars(ipft)%lai_h%obsData(toCountLines, 5))
-                call ReadObsDataFromFile(vars4MCMC%spec_vars(ipft)%lai_h%filepath, toCountLines, &
-                     vars4MCMC%spec_vars(ipft)%lai_h%obsData)
-                allocate(vars4MCMC%spec_vars(ipft)%lai_h%mdData(toCountLines, 4))
-            endif
-        enddo
-
-    end subroutine readObsData
+        return
+    end subroutine readObsData_var
 
     subroutine renewMDpars(parval, re_in_params)
         implicit none
@@ -834,269 +896,171 @@ module mcmc_mod
         mc_iday  = get_iday
         mc_ihour = get_ihour + 1
 
-        ! do i = 1, 20
-        !     write(*,*)vars4MCMC%gpp_d%obsData(i, :)
-        !     write(*,*)int(vars4MCMC%gpp_d%obsData(i, 1))
-        !     write(*,*)int(vars4MCMC%gpp_d%obsData(i, 2))
-        !     write(*,*)int(vars4MCMC%gpp_d%obsData(i, 3))
-        ! enddo
-        ! stop
-
-        ! gpp_d
-        if(vars4MCMC%gpp_d%existOrNot)then
-            ! write(*,*) "test here: ", vars4MCMC%gpp_d%obsData
-            if(mc_itime_gpp_d<=size(vars4MCMC%gpp_d%obsData, dim=1))then
-                do while(vars4MCMC%gpp_d%obsData(mc_itime_gpp_d, 1) .lt. forcing(1)%year)
-                    vars4MCMC%gpp_d%mdData(mc_itime_gpp_d, 4) = -9999
-                    mc_itime_gpp_d = mc_itime_gpp_d + 1
-                enddo
-
-                if(vars4MCMC%gpp_d%obsData(mc_itime_gpp_d, 1) .eq. mc_iyear .and. &
-                vars4MCMC%gpp_d%obsData(mc_itime_gpp_d, 2) .eq. mc_iday  .and. &
-                vars4MCMC%gpp_d%obsData(mc_itime_gpp_d, 3) .eq. mc_ihour) then
-                    vars4MCMC%gpp_d%mdData(mc_itime_gpp_d, 1) = mc_iyear
-                    vars4MCMC%gpp_d%mdData(mc_itime_gpp_d, 2) = mc_iday
-                    vars4MCMC%gpp_d%mdData(mc_itime_gpp_d, 3) = mc_ihour
-                    vars4MCMC%gpp_d%mdData(mc_itime_gpp_d, 4) = outVars_d%gpp*86400000
-                    mc_itime_gpp_d = mc_itime_gpp_d + 1
-                endif
-            endif
-        endif
-        ! nee_d
-        if(vars4MCMC%nee_d%existOrNot)then
-            if(mc_itime_nee_d <= size(vars4MCMC%nee_d%obsData,dim=1))then
-                do while(vars4MCMC%nee_d%obsData(mc_itime_nee_d, 1) .lt. forcing(1)%year)
-                    vars4MCMC%nee_d%mdData(mc_itime_nee_d, 4) = -9999
-                    mc_itime_nee_d = mc_itime_nee_d + 1
-                enddo
-                if(vars4MCMC%nee_d%obsData(mc_itime_nee_d, 1) .eq. mc_iyear .and. &
-                vars4MCMC%nee_d%obsData(mc_itime_nee_d, 2) .eq. mc_iday  .and. &
-                vars4MCMC%nee_d%obsData(mc_itime_nee_d, 3) .eq. mc_ihour) then
-                    vars4MCMC%nee_d%mdData(mc_itime_nee_d, 1) = mc_iyear
-                    vars4MCMC%nee_d%mdData(mc_itime_nee_d, 2) = mc_iday
-                    vars4MCMC%nee_d%mdData(mc_itime_nee_d, 3) = mc_ihour
-                    vars4MCMC%nee_d%mdData(mc_itime_nee_d, 4) = outVars_d%nee*86400000    ! the same in TECO model
-                    mc_itime_nee_d = mc_itime_nee_d + 1
-                endif
-            endif
-        endif
-        ! reco_d
-        if(vars4MCMC%reco_d%existOrNot)then
-            if(mc_itime_reco_d <= size(vars4MCMC%reco_d%obsData, dim=1))then
-                do while(vars4MCMC%reco_d%obsData(mc_itime_reco_d, 1) .lt. forcing(1)%year)
-                    vars4MCMC%reco_d%mdData(mc_itime_reco_d, 4) = -9999
-                    mc_itime_reco_d = mc_itime_reco_d + 1
-                enddo
-
-                if(vars4MCMC%reco_d%obsData(mc_itime_reco_d, 1) .eq. mc_iyear .and. &
-                vars4MCMC%reco_d%obsData(mc_itime_reco_d, 2) .eq. mc_iday  .and. &
-                vars4MCMC%reco_d%obsData(mc_itime_reco_d, 3) .eq. mc_ihour) then
-                    vars4MCMC%reco_d%mdData(mc_itime_reco_d, 1) = mc_iyear
-                    vars4MCMC%reco_d%mdData(mc_itime_reco_d, 2) = mc_iday
-                    vars4MCMC%reco_d%mdData(mc_itime_reco_d, 3) = mc_ihour
-                    vars4MCMC%reco_d%mdData(mc_itime_reco_d, 4) = (outVars_d%ra+outVars_d%rh)*86400000
-                    mc_itime_reco_d = mc_itime_reco_d + 1
-                endif
-            endif
-        endif
-        ! gpp_h
-        if(vars4MCMC%gpp_h%existOrNot)then
-            if(mc_itime_gpp_h <= size(vars4MCMC%gpp_h%obsData, dim=1) )then
-                do while(vars4MCMC%gpp_h%obsData(mc_itime_gpp_h, 1) .lt. forcing(1)%year)
-                    vars4MCMC%gpp_h%mdData(mc_itime_gpp_h, 4) = -9999
-                    mc_itime_gpp_h = mc_itime_gpp_h + 1
-                enddo
-
-                if(vars4MCMC%gpp_h%obsData(mc_itime_gpp_h, 1) .eq. mc_iyear .and. &
-                vars4MCMC%gpp_h%obsData(mc_itime_gpp_h, 2) .eq. mc_iday  .and. &
-                vars4MCMC%gpp_h%obsData(mc_itime_gpp_h, 3) .eq. mc_ihour) then
-                    ! write(*,*) "test gpp hourly", mc_itime_gpp_h
-                    ! write(*,*) vars4MCMC%gpp_h%obsData(mc_itime_gpp_h, 1), mc_iyear
-                    ! write(*,*) vars4MCMC%gpp_h%obsData(mc_itime_gpp_h, 2), mc_iday
-                    ! write(*,*) vars4MCMC%gpp_h%obsData(mc_itime_gpp_h, 3), mc_ihour
-                    ! write(*,*) outVars_h%gpp, vars4MCMC%gpp_h%obsData(mc_itime_gpp_h, 4)
-                    
-                    vars4MCMC%gpp_h%mdData(mc_itime_gpp_h, 1) = mc_iyear
-                    vars4MCMC%gpp_h%mdData(mc_itime_gpp_h, 2) = mc_iday
-                    vars4MCMC%gpp_h%mdData(mc_itime_gpp_h, 3) = mc_ihour
-                    vars4MCMC%gpp_h%mdData(mc_itime_gpp_h, 4) = outVars_h%gpp*3600000
-                    mc_itime_gpp_h = mc_itime_gpp_h + 1
-                endif
-            endif
-        endif
-        ! nee_h
-        if(vars4MCMC%nee_h%existOrNot)then
-            if(mc_itime_nee_h <= size(vars4MCMC%nee_h%obsData, dim=1)) then
-                do while(vars4MCMC%nee_h%obsData(mc_itime_nee_h, 1) .lt. forcing(1)%year)
-                    vars4MCMC%nee_h%mdData(mc_itime_nee_h, 4) = -9999
-                    mc_itime_nee_h = mc_itime_nee_h + 1
-                enddo
-                if(vars4MCMC%nee_h%obsData(mc_itime_nee_h, 1) .eq. mc_iyear .and. &
-                vars4MCMC%nee_h%obsData(mc_itime_nee_h, 2) .eq. mc_iday  .and. &
-                vars4MCMC%nee_h%obsData(mc_itime_nee_h, 3) .eq. mc_ihour) then
-                    vars4MCMC%nee_h%mdData(mc_itime_nee_h, 1) = mc_iyear
-                    vars4MCMC%nee_h%mdData(mc_itime_nee_h, 2) = mc_iday
-                    vars4MCMC%nee_h%mdData(mc_itime_nee_h, 3) = mc_ihour
-                    vars4MCMC%nee_h%mdData(mc_itime_nee_h, 4) = outVars_h%nee*3600000
-                    mc_itime_nee_h = mc_itime_nee_h + 1
-                endif
-            endif
-        endif
-        ! reco_h
-        if(vars4MCMC%reco_h%existOrNot)then
-            if(mc_itime_reco_h <= size(vars4MCMC%reco_h%obsData, dim=1))then
-                do while(vars4MCMC%reco_h%obsData(mc_itime_reco_h, 1) .lt. forcing(1)%year)
-                    vars4MCMC%reco_h%mdData(mc_itime_reco_h, 4) = -9999
-                    mc_itime_reco_h = mc_itime_reco_h + 1
-                enddo
-
-                if(vars4MCMC%reco_h%obsData(mc_itime_reco_h, 1) .eq. mc_iyear .and. &
-                vars4MCMC%reco_h%obsData(mc_itime_reco_h, 2) .eq. mc_iday  .and. &
-                vars4MCMC%reco_h%obsData(mc_itime_reco_h, 3) .eq. mc_ihour) then
-                    vars4MCMC%reco_h%mdData(mc_itime_reco_h, 1) = mc_iyear
-                    vars4MCMC%reco_h%mdData(mc_itime_reco_h, 2) = mc_iday
-                    vars4MCMC%reco_h%mdData(mc_itime_reco_h, 3) = mc_ihour
-                    vars4MCMC%reco_h%mdData(mc_itime_reco_h, 4) = (outVars_h%rh + outVars_h%ra)*3600000
-                    mc_itime_reco_h = mc_itime_reco_h + 1
-                endif
-            endif
-        endif
-        ! ch4_h
-        if(vars4MCMC%ch4_h%existOrNot)then
-            if(mc_itime_ch4_h <= size(vars4MCMC%ch4_h%obsData, dim=1))then
-                do while(vars4MCMC%ch4_h%obsData(mc_itime_ch4_h, 1) .lt. forcing(1)%year)
-                    vars4MCMC%ch4_h%mdData(mc_itime_ch4_h, 4) = -9999
-                    mc_itime_ch4_h = mc_itime_ch4_h + 1
-                enddo
-
-                if(vars4MCMC%ch4_h%obsData(mc_itime_ch4_h, 1) .eq. mc_iyear .and. &
-                vars4MCMC%ch4_h%obsData(mc_itime_ch4_h, 2) .eq. mc_iday  .and. &
-                vars4MCMC%ch4_h%obsData(mc_itime_ch4_h, 3) .eq. mc_ihour) then
-                    vars4MCMC%ch4_h%mdData(mc_itime_ch4_h, 1) = mc_iyear
-                    vars4MCMC%ch4_h%mdData(mc_itime_ch4_h, 2) = mc_iday
-                    vars4MCMC%ch4_h%mdData(mc_itime_ch4_h, 3) = mc_ihour
-                    vars4MCMC%ch4_h%mdData(mc_itime_ch4_h, 4) = sum(outVars_h%CH4(:))*3600000
-                    mc_itime_ch4_h = mc_itime_ch4_h + 1
-                endif
-            endif
-        endif
-        ! cleaf
-        if(vars4MCMC%cleaf%existOrNot)then
-            if(mc_itime_cleaf <= size(vars4MCMC%cleaf%obsData, dim=1))then
-                do while(vars4MCMC%cleaf%obsData(mc_itime_cleaf, 1) .lt. forcing(1)%year)
-                    vars4MCMC%cleaf%mdData(mc_itime_cleaf, 4) = -9999
-                    mc_itime_cleaf = mc_itime_cleaf + 1
-                enddo
-
-                if(vars4MCMC%cleaf%obsData(mc_itime_cleaf, 1) .eq. mc_iyear .and. &
-                vars4MCMC%cleaf%obsData(mc_itime_cleaf, 2) .eq. mc_iday  .and. &
-                vars4MCMC%cleaf%obsData(mc_itime_cleaf, 3) .eq. mc_ihour) then
-                    vars4MCMC%cleaf%mdData(mc_itime_cleaf, 1) = mc_iyear
-                    vars4MCMC%cleaf%mdData(mc_itime_cleaf, 2) = mc_iday
-                    vars4MCMC%cleaf%mdData(mc_itime_cleaf, 3) = mc_ihour
-                    vars4MCMC%cleaf%mdData(mc_itime_cleaf, 4) = outVars_h%cLeaf
-                    mc_itime_cleaf = mc_itime_cleaf + 1
-                endif
-            endif
-        endif
-        ! cwood
-        if(vars4MCMC%cwood%existOrNot)then
-            if(mc_itime_cwood <= size(vars4MCMC%cwood%obsData, dim=1)) then
-                do while(vars4MCMC%cwood%obsData(mc_itime_cwood, 1) .lt. forcing(1)%year)
-                    vars4MCMC%cwood%mdData(mc_itime_cwood, 4) = -9999
-                    mc_itime_cwood = mc_itime_cwood + 1
-                enddo
-                if(vars4MCMC%cwood%obsData(mc_itime_cwood, 1) .eq. mc_iyear .and. &
-                vars4MCMC%cwood%obsData(mc_itime_cwood, 2) .eq. mc_iday  .and. &
-                vars4MCMC%cwood%obsData(mc_itime_cwood, 3) .eq. mc_ihour) then
-                    vars4MCMC%cwood%mdData(mc_itime_cwood, 1) = mc_iyear
-                    vars4MCMC%cwood%mdData(mc_itime_cwood, 2) = mc_iday
-                    vars4MCMC%cwood%mdData(mc_itime_cwood, 3) = mc_ihour
-                    vars4MCMC%cwood%mdData(mc_itime_cwood, 4) = outVars_h%cStem
-                    mc_itime_cwood = mc_itime_cwood + 1
-                endif
-            endif
-        endif
-
-        ! bnpp_y
-        if(vars4MCMC%bnpp_y%existOrNot)then
-            if(mc_itime_bnpp_y <= size(vars4MCMC%bnpp_y%obsData, dim=1)) then
-                do while(vars4MCMC%bnpp_y%obsData(mc_itime_bnpp_y, 1) .lt. forcing(1)%year)
-                    vars4MCMC%bnpp_y%mdData(mc_itime_bnpp_y, 4) = -9999
-                    mc_itime_bnpp_y = mc_itime_bnpp_y + 1
-                enddo
-                if (vars4MCMC%bnpp_y%obsData(mc_itime_bnpp_y, 2) .lt. 0) then 
-                    vars4MCMC%bnpp_y%obsData(mc_itime_bnpp_y, 2) = 365
-                endif
-                if(vars4MCMC%bnpp_y%obsData(mc_itime_bnpp_y, 1) .eq. mc_iyear .and. &
-                vars4MCMC%bnpp_y%obsData(mc_itime_bnpp_y, 2) .eq. mc_iday  .and. &
-                vars4MCMC%bnpp_y%obsData(mc_itime_bnpp_y, 3) .eq. mc_ihour) then
-                    vars4MCMC%bnpp_y%mdData(mc_itime_bnpp_y, 1) = mc_iyear
-                    vars4MCMC%bnpp_y%mdData(mc_itime_bnpp_y, 2) = mc_iday
-                    vars4MCMC%bnpp_y%mdData(mc_itime_bnpp_y, 3) = mc_ihour
-                    vars4MCMC%bnpp_y%mdData(mc_itime_bnpp_y, 4) = &
-                        outVars_y%allSpec(ipft)%nppRoot*3600000*365*24
-                    mc_itime_bnpp_y = mc_itime_bnpp_y + 1
-                endif
-            endif
-        endif
-
-        npft = count_pft
-        do ipft = 1, npft
-            ! anpp_y
-            if(vars4MCMC%spec_vars(ipft)%anpp_y%existOrNot)then
-                if(mc_itime_anpp_y <= size(vars4MCMC%spec_vars(ipft)%anpp_y%obsData, dim=1)) then
-                    do while(vars4MCMC%spec_vars(ipft)%anpp_y%obsData(mc_itime_anpp_y, 1) .lt. forcing(1)%year)
-                        vars4MCMC%spec_vars(ipft)%anpp_y%mdData(mc_itime_anpp_y, 4) = -9999
-                        mc_itime_anpp_y = mc_itime_anpp_y + 1
-                    enddo
-                    if (vars4MCMC%spec_vars(ipft)%anpp_y%obsData(mc_itime_anpp_y, 2) .lt. 0) then 
-                        vars4MCMC%spec_vars(ipft)%anpp_y%obsData(mc_itime_anpp_y, 2) = 365
-                    endif
-                    if(vars4MCMC%spec_vars(ipft)%anpp_y%obsData(mc_itime_anpp_y, 1) .eq. mc_iyear .and. &
-                    vars4MCMC%spec_vars(ipft)%anpp_y%obsData(mc_itime_anpp_y, 2) .eq. mc_iday  .and. &
-                    vars4MCMC%spec_vars(ipft)%anpp_y%obsData(mc_itime_anpp_y, 3) .eq. mc_ihour) then
-                        vars4MCMC%spec_vars(ipft)%anpp_y%mdData(mc_itime_anpp_y, 1) = mc_iyear
-                        vars4MCMC%spec_vars(ipft)%anpp_y%mdData(mc_itime_anpp_y, 2) = mc_iday
-                        vars4MCMC%spec_vars(ipft)%anpp_y%mdData(mc_itime_anpp_y, 3) = mc_ihour
-                        if (ipft == 3)then ! shagnum
-                            vars4MCMC%spec_vars(ipft)%anpp_y%mdData(mc_itime_anpp_y, 4) = &
-                                (outVars_y%allSpec(ipft)%nppLeaf + &
-                                outVars_y%allSpec(ipft)%nppStem + &
-                                outVars_y%allSpec(ipft)%nppRoot)*3600000*365*24
-                        else
-                            vars4MCMC%spec_vars(ipft)%anpp_y%mdData(mc_itime_anpp_y, 4) = &
-                                (outVars_y%allSpec(ipft)%nppLeaf + &
-                                outVars_y%allSpec(ipft)%nppStem)*3600000*365*24
-                        endif
-                        mc_itime_anpp_y = mc_itime_anpp_y + 1
-                    endif
-                endif
-            endif
-
-            ! lai_h
-            if(vars4MCMC%spec_vars(ipft)%lai_h%existOrNot)then
-                if(mc_itime_lai_h <= size(vars4MCMC%spec_vars(ipft)%lai_h%obsData, dim=1)) then
-                    do while(vars4MCMC%spec_vars(ipft)%lai_h%obsData(mc_itime_lai_h, 1) .lt. forcing(1)%year)
-                        vars4MCMC%spec_vars(ipft)%lai_h%mdData(mc_itime_lai_h, 4) = -9999
-                        mc_itime_lai_h = mc_itime_lai_h + 1
-                    enddo
-                    if(vars4MCMC%spec_vars(ipft)%lai_h%obsData(mc_itime_lai_h, 1) .eq. mc_iyear .and. &
-                    vars4MCMC%spec_vars(ipft)%lai_h%obsData(mc_itime_lai_h, 2) .eq. mc_iday  .and. &
-                    vars4MCMC%spec_vars(ipft)%lai_h%obsData(mc_itime_lai_h, 3) .eq. mc_ihour) then
-                        vars4MCMC%spec_vars(ipft)%lai_h%mdData(mc_itime_lai_h, 1) = mc_iyear
-                        vars4MCMC%spec_vars(ipft)%lai_h%mdData(mc_itime_lai_h, 2) = mc_iday
-                        vars4MCMC%spec_vars(ipft)%lai_h%mdData(mc_itime_lai_h, 3) = mc_ihour
-                        vars4MCMC%spec_vars(ipft)%lai_h%mdData(mc_itime_lai_h, 4) = outVars_h%allSpec(ipft)%lai
-                        mc_itime_lai_h = mc_itime_lai_h + 1
-                    endif
-                endif
-            endif
-        enddo
-           
+        call GetSimuData_var(vars4MCMC%ANPP_Shrub_y,(outVars_y%allSpec(2)%nppLeaf + outVars_y%allSpec(2)%nppStem)*24*365)
+        call GetSimuData_var(vars4MCMC%ANPP_Tree_y, (outVars_y%allSpec(1)%nppLeaf + outVars_y%allSpec(1)%nppStem)*24*365)
+        call GetSimuData_var(vars4MCMC%NPP_sphag_y,  outVars_y%allSpec(3)%npp*24*365)
+        call GetSimuData_var(vars4MCMC%BNPP_y,       (outVars_y%allSpec(1)%nppRoot + outVars_y%allSpec(2)%nppRoot)*24*365)        ! tree + shrub
+        call GetSimuData_var(vars4MCMC%er_d,         (outVars_d%allSpec(2)%ra + outVars_d%allSpec(3)%ra + outVars_d%rh)*24)          ! shrub + sphag.
+        call GetSimuData_var(vars4MCMC%er_h,         (outVars_h%allSpec(2)%ra + outVars_h%allSpec(3)%ra + outVars_h%rh))          ! shrub + sphag.
+        call GetSimuData_var(vars4MCMC%gpp_d,        (outVars_d%allSpec(2)%gpp + outVars_d%allSpec(3)%gpp)*24)         ! Shrub + sphag.
+        call GetSimuData_var(vars4MCMC%nee_d,        (outVars_d%allSpec(2)%gpp + outVars_d%allSpec(3)%gpp - &
+                                                    (outVars_d%allSpec(2)%ra  + outVars_d%allSpec(3)%ra  + outVars_d%rh))*24)         ! Shrub + sphag.
+        call GetSimuData_var(vars4MCMC%nee_h,        (outVars_h%allSpec(2)%gpp + outVars_h%allSpec(3)%gpp - &
+                                                    (outVars_h%allSpec(2)%ra  + outVars_h%allSpec(3)%ra  + outVars_h%rh))*24)         ! shrub + sphag.
+        call GetSimuData_var(vars4MCMC%LAI_d,       (outVars_d%allSpec(1)%LAI + outVars_d%allSpec(2)%LAI)/2)         ! tree  + Shrub
+        !
+        call GetSimuData_var(vars4MCMC%leaf_mass_shrub_y, outVars_y%allSpec(2)%cleaf*0.48)
+        call GetSimuData_var(vars4MCMC%stem_mass_shrub_y, outVars_y%allSpec(2)%cStem*0.48)
+        call GetSimuData_var(vars4MCMC%leaf_resp_shrub_d, outVars_d%allSpec(2)%ra*24) 
+        call GetSimuData_var(vars4MCMC%leaf_resp_tree_d,  outVars_d%allSpec(1)%ra*24) 
+        ! methane
+        call GetSimuData_var(vars4MCMC%ch4_d, sum(outVars_d%ch4)*24) 
+        call GetSimuData_var(vars4MCMC%ch4_h, sum(outVars_h%ch4)) 
+        ! 
+        call GetSimuData_var(vars4MCMC%CN_shag_d,    ((outVars_d%allSpec(3)%cleaf + outVars_d%allSpec(3)%cStem + &
+                                                      outVars_d%allSpec(3)%cRoot)/(outVars_d%allSpec(3)%nLeaf + &
+                                                      outVars_d%allSpec(3)%nStem + outVars_d%allSpec(3)%nRoot))) 
+        call GetSimuData_var(vars4MCMC%photo_shrub_d, outVars_d%allSpec(2)%gpp*24) 
+        call GetSimuData_var(vars4MCMC%photo_tree_d,  outVars_d%allSpec(1)%gpp*24) 
+        ! ----------------------------------------------------------------------------
+        call update_mcmc_tot_outputs(tot_paramsets_outs_d, outVars_d, nDay)
     end subroutine GetSimuData
 
-    
+    subroutine GetSimuData_var(var_obsData, var_mdData)
+        implicit none
+        type(interCostVariable), intent(inout) :: var_obsData
+        real, intent(in) :: var_mdData
+
+        if(var_obsData%existOrNot)then  ! if the observation file is existed
+            if(var_obsData%mc_itime <= size(var_obsData%obsData, dim=1))then  ! still have observation data not being matched
+                do while(var_obsData%obsData(var_obsData%mc_itime, 1) .lt. forcing(1)%year) ! some observation is beyond the range of simulation
+                    var_obsData%mdData(var_obsData%mc_itime, 4) = -9999
+                    var_obsData%mc_itime = var_obsData%mc_itime + 1
+                enddo
+
+                if(var_obsData%obsData(var_obsData%mc_itime, 1) .eq. mc_iyear .and. &
+                   var_obsData%obsData(var_obsData%mc_itime, 2) .eq. mc_iday  .and. &
+                   var_obsData%obsData(var_obsData%mc_itime, 3) .eq. mc_ihour) then
+                        var_obsData%mdData(var_obsData%mc_itime, 1) = mc_iyear
+                        var_obsData%mdData(var_obsData%mc_itime, 2) = mc_iday
+                        var_obsData%mdData(var_obsData%mc_itime, 3) = mc_ihour
+                        var_obsData%mdData(var_obsData%mc_itime, 4) = var_mdData
+                        var_obsData%mc_itime = var_obsData%mc_itime + 1
+                endif
+            endif
+        endif
+    end subroutine GetSimuData_var
+
+    subroutine update_mcmc_tot_outputs(tot_mcmc_outputs, simu_outputs, inTime)
+        implicit none
+        type(mcmc_outVars_type), intent(inout) :: tot_mcmc_outputs 
+        type(outvars_data_type), intent(in)    :: simu_outputs
+        integer, intent(in) :: inTime
+        integer :: ipft
+
+        do ipft = 1, count_pft
+            tot_mcmc_outputs%allSpec(ipft)%gpp(upgraded, inTime)   = simu_outputs%allSpec(ipft)%gpp
+            tot_mcmc_outputs%allSpec(ipft)%nee(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nee
+            tot_mcmc_outputs%allSpec(ipft)%npp(upgraded, inTime)   = simu_outputs%allSpec(ipft)%npp
+            tot_mcmc_outputs%allSpec(ipft)%nppLeaf(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nppLeaf
+            tot_mcmc_outputs%allSpec(ipft)%nppWood(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nppWood
+            tot_mcmc_outputs%allSpec(ipft)%nppStem(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nppStem
+            tot_mcmc_outputs%allSpec(ipft)%nppRoot(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nppRoot
+            tot_mcmc_outputs%allSpec(ipft)%nppOther(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nppOther    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+            tot_mcmc_outputs%allSpec(ipft)%ra(upgraded, inTime)   = simu_outputs%allSpec(ipft)%ra
+            tot_mcmc_outputs%allSpec(ipft)%raLeaf(upgraded, inTime)   = simu_outputs%allSpec(ipft)%raLeaf
+            tot_mcmc_outputs%allSpec(ipft)%raStem(upgraded, inTime)   = simu_outputs%allSpec(ipft)%raStem
+            tot_mcmc_outputs%allSpec(ipft)%raRoot(upgraded, inTime)   = simu_outputs%allSpec(ipft)%raRoot
+            tot_mcmc_outputs%allSpec(ipft)%raOther(upgraded, inTime)   = simu_outputs%allSpec(ipft)%raOther
+            tot_mcmc_outputs%allSpec(ipft)%rMaint(upgraded, inTime)   = simu_outputs%allSpec(ipft)%rMaint
+            tot_mcmc_outputs%allSpec(ipft)%rGrowth(upgraded, inTime)   = simu_outputs%allSpec(ipft)%rGrowth
+            tot_mcmc_outputs%allSpec(ipft)%nbp(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nbp
+            ! Carbon Pools  (KgC m-2)
+            tot_mcmc_outputs%allSpec(ipft)%cLeaf(upgraded, inTime)   = simu_outputs%allSpec(ipft)%cLeaf
+            tot_mcmc_outputs%allSpec(ipft)%cStem(upgraded, inTime)   = simu_outputs%allSpec(ipft)%cStem
+            tot_mcmc_outputs%allSpec(ipft)%cRoot(upgraded, inTime)   = simu_outputs%allSpec(ipft)%cRoot
+            ! Nitrogen pools (kgN m-2)
+            tot_mcmc_outputs%allSpec(ipft)%nLeaf(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nLeaf
+            tot_mcmc_outputs%allSpec(ipft)%nStem(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nStem
+            tot_mcmc_outputs%allSpec(ipft)%nRoot(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nRoot
+            ! tot_mcmc_outputs%allSpec(ipft)%nOther(:)
+            ! water fluxes (kg m-2 s-1)
+            tot_mcmc_outputs%allSpec(ipft)%tran(upgraded, inTime)   = simu_outputs%allSpec(ipft)%tran
+            ! other
+            tot_mcmc_outputs%allSpec(ipft)%lai(upgraded, inTime)   = simu_outputs%allSpec(ipft)%lai
+        enddo
+
+        tot_mcmc_outputs%gpp(upgraded, inTime)            = simu_outputs%gpp    
+        tot_mcmc_outputs%nee(upgraded, inTime)            = simu_outputs%nee
+        tot_mcmc_outputs%npp(upgraded, inTime)            = simu_outputs%npp
+        tot_mcmc_outputs%nppLeaf(upgraded, inTime)        = simu_outputs%nppLeaf
+        tot_mcmc_outputs%nppWood(upgraded, inTime)        = simu_outputs%nppWood
+        tot_mcmc_outputs%nppStem(upgraded, inTime)        = simu_outputs%nppStem
+        tot_mcmc_outputs%nppRoot(upgraded, inTime)        = simu_outputs%nppRoot
+        tot_mcmc_outputs%nppOther(upgraded, inTime)       = simu_outputs%nppOther
+        tot_mcmc_outputs%ra(upgraded, inTime)             = simu_outputs%ra
+        tot_mcmc_outputs%raLeaf(upgraded, inTime)         = simu_outputs%raLeaf
+        tot_mcmc_outputs%raStem(upgraded, inTime)         = simu_outputs%raStem
+        tot_mcmc_outputs%raRoot(upgraded, inTime)         = simu_outputs%raRoot
+        tot_mcmc_outputs%raOther(upgraded, inTime)        = simu_outputs%raOther
+        tot_mcmc_outputs%rMaint(upgraded, inTime)         = simu_outputs%rMaint
+        tot_mcmc_outputs%rGrowth(upgraded, inTime)        = simu_outputs%rGrowth
+        tot_mcmc_outputs%rh(upgraded, inTime)             = simu_outputs%rh
+        tot_mcmc_outputs%nbp(upgraded, inTime)            = simu_outputs%nbp
+        tot_mcmc_outputs%wetlandCH4(upgraded, inTime)     = simu_outputs%wetlandCH4
+        tot_mcmc_outputs%wetlandCH4prod(upgraded, inTime) = simu_outputs%wetlandCH4prod
+        tot_mcmc_outputs%wetlandCH4cons(upgraded, inTime) = simu_outputs%wetlandCH4cons
+        ! Carbon Pools  (KgC m-2)
+        tot_mcmc_outputs%cLeaf(upgraded, inTime)          = simu_outputs%cLeaf
+        tot_mcmc_outputs%cStem(upgraded, inTime)          = simu_outputs%cStem
+        tot_mcmc_outputs%cRoot(upgraded, inTime)          = simu_outputs%cRoot
+        tot_mcmc_outputs%cOther(upgraded, inTime)         = simu_outputs%cOther
+        tot_mcmc_outputs%cLitter(upgraded, inTime)        = simu_outputs%cLitter
+        tot_mcmc_outputs%cLitterCwd(upgraded, inTime)     = simu_outputs%cLitterCwd
+        tot_mcmc_outputs%cSoil(upgraded, inTime)          = simu_outputs%cSoil
+        tot_mcmc_outputs%cSoilLevels(upgraded, inTime, :) = simu_outputs%cSoilLevels
+        tot_mcmc_outputs%cSoilFast(upgraded, inTime)      = simu_outputs%cSoilFast
+        tot_mcmc_outputs%cSoilSlow(upgraded, inTime)      = simu_outputs%cSoilSlow
+        tot_mcmc_outputs%cSoilPassive(upgraded, inTime)   = simu_outputs%cSoilPassive
+        tot_mcmc_outputs%CH4(upgraded, inTime, :)         = simu_outputs%CH4
+        ! Nitrogen fluxes (kgN m-2 s-1)
+        tot_mcmc_outputs%fBNF(upgraded, inTime)           = simu_outputs%fBNF
+        tot_mcmc_outputs%fN2O(upgraded, inTime)           = simu_outputs%fN2O
+        tot_mcmc_outputs%fNloss(upgraded, inTime)         = simu_outputs%fNloss
+        tot_mcmc_outputs%fNnetmin(upgraded, inTime)       = simu_outputs%fNnetmin
+        tot_mcmc_outputs%fNdep(upgraded, inTime)          = simu_outputs% fNdep
+        ! Nitrogen pools (kgN m-2)
+        tot_mcmc_outputs%nLeaf(upgraded, inTime)          = simu_outputs%nLeaf
+        tot_mcmc_outputs%nStem(upgraded, inTime)          = simu_outputs%nStem
+        tot_mcmc_outputs%nRoot(upgraded, inTime)          = simu_outputs%nRoot
+        tot_mcmc_outputs%nOther(upgraded, inTime)         = simu_outputs%nOther
+        tot_mcmc_outputs%nLitter(upgraded, inTime)        = simu_outputs%nLitter
+        tot_mcmc_outputs%nLitterCwd(upgraded, inTime)     = simu_outputs%nLitterCwd
+        tot_mcmc_outputs%nSoil(upgraded, inTime)          = simu_outputs%nSoil
+        tot_mcmc_outputs%nMineral(upgraded, inTime)       = simu_outputs%nMineral
+        ! energy fluxes (W m-2)
+        tot_mcmc_outputs%hfls(upgraded, inTime)           = simu_outputs%hfls
+        tot_mcmc_outputs%hfss(upgraded, inTime)           = simu_outputs%hfss
+        tot_mcmc_outputs%SWnet(upgraded, inTime)          = simu_outputs%SWnet
+        tot_mcmc_outputs%LWnet(upgraded, inTime)          = simu_outputs%LWnet
+        ! water fluxes (kg m-2 s-1)
+        tot_mcmc_outputs%ec(upgraded, inTime)             = simu_outputs%ec
+        tot_mcmc_outputs%tran(upgraded, inTime)           = simu_outputs%tran
+        tot_mcmc_outputs%es(upgraded, inTime)             = simu_outputs%es
+        tot_mcmc_outputs%hfsbl(upgraded, inTime)          = simu_outputs%hfsbl
+        tot_mcmc_outputs%mrro(upgraded, inTime)           = simu_outputs%mrro
+        tot_mcmc_outputs%mrros(upgraded, inTime)          = simu_outputs%mrros
+        tot_mcmc_outputs%mrrob(upgraded, inTime)          = simu_outputs%mrrob
+        ! other
+        tot_mcmc_outputs%mrso(upgraded, inTime, :)        = simu_outputs%mrso
+        tot_mcmc_outputs%tsl(upgraded, inTime, :)         = simu_outputs%tsl
+        tot_mcmc_outputs%tsland(upgraded, inTime)         = simu_outputs%tsland
+        tot_mcmc_outputs%wtd(upgraded, inTime)            = simu_outputs%wtd
+        tot_mcmc_outputs%snd(upgraded, inTime)            = simu_outputs%snd
+        tot_mcmc_outputs%lai(upgraded, inTime)            = simu_outputs%lai
+        return
+    end subroutine update_mcmc_tot_outputs
+
 
     ! subroutine ReadLineNumFromFile(filepath, count_lines)
     !     implicit none

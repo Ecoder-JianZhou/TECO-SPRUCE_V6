@@ -239,14 +239,7 @@ module transfer
                                             vegn%allSp(ipft)%QC(3)/vegn%allSp(ipft)%CN(3),0.2*vegn%allSp(ipft)%NSN),0.)
             vegn%allSp(ipft)%NSN    = vegn%allSp(ipft)%NSN- &
                                       (vegn%allSp(ipft)%N_leaf+vegn%allSp(ipft)%N_wood+vegn%allSp(ipft)%N_root)
-            ! print *, "NSN1", vegn%allSp(ipft)%NSN, vegn%allSp(ipft)%N_transfer, vegn%allSp(ipft)%N_uptake, &
-            ! vegn%allSp(ipft)%N_fixation
-            ! print *, "NSN2", vegn%allSp(ipft)%N_leaf, vegn%allSp(ipft)%N_wood, vegn%allSp(ipft)%N_root
-            ! print *, "NSN3", vegn%allSp(ipft)%OutN(1), vegn%allSp(ipft)%OutN(2), vegn%allSp(ipft)%OutN(3), vegn%allSp(ipft)%alphaN
-            ! print *, "NSN4", vegn%allSp(ipft)%N_demand + vegn%allSp(ipft)%N_deficit,  vegn%allSp(ipft)%N_demand, &
-            !      vegn%allSp(ipft)%N_deficit,  &
-            ! &     st%QNminer, vegn%allSp(ipft)%QC(3), (vegn%allSp(ipft)%QC(3)),Qroot0,  &
-            ! &     Nup0, vegn%allSp(ipft)%NSC, (ksye/st%QNminer), ksye, st%QNminer
+
             if(vegn%allSp(ipft)%NSN < 0.) then
                 print*, "vegn%allSp(ipft)%NSN < 0.", vegn%allSp(ipft)%NSN
                 stop
@@ -268,6 +261,7 @@ module transfer
         enddo
 
         ! update QNminer
+        st%N_immob = N_immob
         st%QNminer = st%QNminer + st%N_miner + st%N_deposit - (st%N_uptake + N_immob)
         ! Loss of mineralized N and dissolved organic N
         Scalar_N_flow = 0.5*st%runoff/st%rdepth
@@ -288,7 +282,7 @@ module transfer
         st%N_leach = Scalar_N_flow*st%QNminer+Scalar_N_flow*st%QN(6)*LDON0
         st%N_vol   = Scalar_N_T*st%QNminer
         st%N_loss  = st%N_leach + st%N_vol
-
+        
         ! update QNminer
         st%QNminer  = st%QNminer - st%N_loss
         st%fNnetmin = st%N_miner + st%N_deposit - (st%N_uptake+N_immob)-st%N_loss
