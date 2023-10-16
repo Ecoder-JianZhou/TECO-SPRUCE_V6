@@ -195,7 +195,7 @@
     mc_f_M2P       = 0.1
     mc_f_S2P       = 0.2
     mc_f_S2M       = 0.5
-    mc_f_P2M       = 0.45								
+    mc_f_P2M       = 0.45							
 &end
 
 &nml_parmin

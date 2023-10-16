@@ -291,8 +291,85 @@ contains
         type(mcmc_outVars_type), intent(in) :: write_data
         integer ipft
 
-        do ipft = 1, npft
-            
+        do ipft = 1, count_pft
+            ! carbon fluxes (Kg C m-2 s-1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%gpp,    &
+                "gpp_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "gross primary productivity ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%nee,    &
+                "nee_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "net ecosystem exchange ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%npp,    &
+                "npp_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "net primary productivity ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%nppLeaf,    &
+                "nppLeaf_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "leaf net primary productivity ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%nppWood,    &
+                "nppWood_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "wood net primary productivity ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%nppStem,    &
+                "nppStem_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "stem net primary productivity ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%nppRoot,    &
+                "nppRoot_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "root net primary productivity ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%nppOther,    &
+                "nppOther_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "other npp primary productivity ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%ra,    &
+                "ra_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "automatic respiration ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%raLeaf,    &
+                "raLeaf_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "leaf automatic respiration ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%raStem,    &
+                "raStem_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "stem automatic respirtion ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%raRoot,    &
+                "raRoot_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "root automatic respiration ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%raOther,    &
+                "raOther_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "other automatic respiration ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%rMaint,    &
+                "rMaint_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "maintenance respiration ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%rGrowth,    &
+                "rGrowth_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "growth respiration ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%nbp,    &
+                "nbp_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "net biomass productivity ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            ! Carbon Pools  (KgC m-2)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%cLeaf,    &
+                "cLeaf_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "total leaf carbon ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%cStem,    &
+                "cStem_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "total stem carbon ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%cRoot,    &
+                "cRoot_"//adjustl(trim(spec_names(ipft))), "gC m-2 h-1", &
+                "total root carbon ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            ! Nitrogen pools (kgN m-2)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%nLeaf,    &
+                "nLeaf_"//adjustl(trim(spec_names(ipft))), "gN m-2 h-1", &
+                "total leaf nitrogen ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%nStem,    &
+                "nStem_"//adjustl(trim(spec_names(ipft))), "gN m-2 h-1", &
+                "total stem nitrogen ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%nRoot,    &
+                "nRoot_"//adjustl(trim(spec_names(ipft))), "gN m-2 h-1", &
+                "total root nitrogen ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            ! call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%nOther(:)
+            ! water fluxes (kg m-2 s-1)
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%tran,    &
+                "tran_"//adjustl(trim(spec_names(ipft))), "g m-2 h-1", &
+                "transpiration ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)
+            ! other
+            call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%allSpec(ipft)%lai,    &
+                "lai_"//adjustl(trim(spec_names(ipft))), "-", &
+                "leaf area index ("//adjustl(trim(spec_names(ipft)))//")", str_freq, 1)                     ! m2 m-2, Leaf area index
         enddo 
 
         call write_mcmc_nc(mc_outdir, ntime, nSimuLen, write_data%gpp,    &

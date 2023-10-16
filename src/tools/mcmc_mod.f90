@@ -5,7 +5,7 @@ module mcmc_mod
 
     ! parameters and observation files
 
-    integer npar, nDAsimu, ncov, nRand, nSpecParams,upgraded
+    integer npar, nDAsimu, ncov, nRand, nSpecParams,upgraded,iDAsimu
     real search_scale
     logical :: do_mc_out_hr, do_mc_out_day, do_mc_out_mon, do_mc_out_yr
 
@@ -959,105 +959,105 @@ module mcmc_mod
         integer :: ipft
 
         do ipft = 1, count_pft
-            tot_mcmc_outputs%allSpec(ipft)%gpp(upgraded, inTime)   = simu_outputs%allSpec(ipft)%gpp
-            tot_mcmc_outputs%allSpec(ipft)%nee(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nee
-            tot_mcmc_outputs%allSpec(ipft)%npp(upgraded, inTime)   = simu_outputs%allSpec(ipft)%npp
-            tot_mcmc_outputs%allSpec(ipft)%nppLeaf(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nppLeaf
-            tot_mcmc_outputs%allSpec(ipft)%nppWood(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nppWood
-            tot_mcmc_outputs%allSpec(ipft)%nppStem(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nppStem
-            tot_mcmc_outputs%allSpec(ipft)%nppRoot(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nppRoot
-            tot_mcmc_outputs%allSpec(ipft)%nppOther(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nppOther    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
-            tot_mcmc_outputs%allSpec(ipft)%ra(upgraded, inTime)   = simu_outputs%allSpec(ipft)%ra
-            tot_mcmc_outputs%allSpec(ipft)%raLeaf(upgraded, inTime)   = simu_outputs%allSpec(ipft)%raLeaf
-            tot_mcmc_outputs%allSpec(ipft)%raStem(upgraded, inTime)   = simu_outputs%allSpec(ipft)%raStem
-            tot_mcmc_outputs%allSpec(ipft)%raRoot(upgraded, inTime)   = simu_outputs%allSpec(ipft)%raRoot
-            tot_mcmc_outputs%allSpec(ipft)%raOther(upgraded, inTime)   = simu_outputs%allSpec(ipft)%raOther
-            tot_mcmc_outputs%allSpec(ipft)%rMaint(upgraded, inTime)   = simu_outputs%allSpec(ipft)%rMaint
-            tot_mcmc_outputs%allSpec(ipft)%rGrowth(upgraded, inTime)   = simu_outputs%allSpec(ipft)%rGrowth
-            tot_mcmc_outputs%allSpec(ipft)%nbp(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nbp
+            tot_mcmc_outputs%allSpec(ipft)%gpp(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%gpp
+            tot_mcmc_outputs%allSpec(ipft)%nee(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%nee
+            tot_mcmc_outputs%allSpec(ipft)%npp(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%npp
+            tot_mcmc_outputs%allSpec(ipft)%nppLeaf(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%nppLeaf
+            tot_mcmc_outputs%allSpec(ipft)%nppWood(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%nppWood
+            tot_mcmc_outputs%allSpec(ipft)%nppStem(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%nppStem
+            tot_mcmc_outputs%allSpec(ipft)%nppRoot(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%nppRoot
+            tot_mcmc_outputs%allSpec(ipft)%nppOther(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%nppOther    ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+            tot_mcmc_outputs%allSpec(ipft)%ra(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%ra
+            tot_mcmc_outputs%allSpec(ipft)%raLeaf(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%raLeaf
+            tot_mcmc_outputs%allSpec(ipft)%raStem(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%raStem
+            tot_mcmc_outputs%allSpec(ipft)%raRoot(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%raRoot
+            tot_mcmc_outputs%allSpec(ipft)%raOther(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%raOther
+            tot_mcmc_outputs%allSpec(ipft)%rMaint(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%rMaint
+            tot_mcmc_outputs%allSpec(ipft)%rGrowth(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%rGrowth
+            tot_mcmc_outputs%allSpec(ipft)%nbp(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%nbp
             ! Carbon Pools  (KgC m-2)
-            tot_mcmc_outputs%allSpec(ipft)%cLeaf(upgraded, inTime)   = simu_outputs%allSpec(ipft)%cLeaf
-            tot_mcmc_outputs%allSpec(ipft)%cStem(upgraded, inTime)   = simu_outputs%allSpec(ipft)%cStem
-            tot_mcmc_outputs%allSpec(ipft)%cRoot(upgraded, inTime)   = simu_outputs%allSpec(ipft)%cRoot
+            tot_mcmc_outputs%allSpec(ipft)%cLeaf(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%cLeaf
+            tot_mcmc_outputs%allSpec(ipft)%cStem(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%cStem
+            tot_mcmc_outputs%allSpec(ipft)%cRoot(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%cRoot
             ! Nitrogen pools (kgN m-2)
-            tot_mcmc_outputs%allSpec(ipft)%nLeaf(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nLeaf
-            tot_mcmc_outputs%allSpec(ipft)%nStem(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nStem
-            tot_mcmc_outputs%allSpec(ipft)%nRoot(upgraded, inTime)   = simu_outputs%allSpec(ipft)%nRoot
+            tot_mcmc_outputs%allSpec(ipft)%nLeaf(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%nLeaf
+            tot_mcmc_outputs%allSpec(ipft)%nStem(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%nStem
+            tot_mcmc_outputs%allSpec(ipft)%nRoot(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%nRoot
             ! tot_mcmc_outputs%allSpec(ipft)%nOther(:)
             ! water fluxes (kg m-2 s-1)
-            tot_mcmc_outputs%allSpec(ipft)%tran(upgraded, inTime)   = simu_outputs%allSpec(ipft)%tran
+            tot_mcmc_outputs%allSpec(ipft)%tran(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%tran
             ! other
-            tot_mcmc_outputs%allSpec(ipft)%lai(upgraded, inTime)   = simu_outputs%allSpec(ipft)%lai
+            tot_mcmc_outputs%allSpec(ipft)%lai(iDAsimu, inTime)   = simu_outputs%allSpec(ipft)%lai
         enddo
 
-        tot_mcmc_outputs%gpp(upgraded, inTime)            = simu_outputs%gpp    
-        tot_mcmc_outputs%nee(upgraded, inTime)            = simu_outputs%nee
-        tot_mcmc_outputs%npp(upgraded, inTime)            = simu_outputs%npp
-        tot_mcmc_outputs%nppLeaf(upgraded, inTime)        = simu_outputs%nppLeaf
-        tot_mcmc_outputs%nppWood(upgraded, inTime)        = simu_outputs%nppWood
-        tot_mcmc_outputs%nppStem(upgraded, inTime)        = simu_outputs%nppStem
-        tot_mcmc_outputs%nppRoot(upgraded, inTime)        = simu_outputs%nppRoot
-        tot_mcmc_outputs%nppOther(upgraded, inTime)       = simu_outputs%nppOther
-        tot_mcmc_outputs%ra(upgraded, inTime)             = simu_outputs%ra
-        tot_mcmc_outputs%raLeaf(upgraded, inTime)         = simu_outputs%raLeaf
-        tot_mcmc_outputs%raStem(upgraded, inTime)         = simu_outputs%raStem
-        tot_mcmc_outputs%raRoot(upgraded, inTime)         = simu_outputs%raRoot
-        tot_mcmc_outputs%raOther(upgraded, inTime)        = simu_outputs%raOther
-        tot_mcmc_outputs%rMaint(upgraded, inTime)         = simu_outputs%rMaint
-        tot_mcmc_outputs%rGrowth(upgraded, inTime)        = simu_outputs%rGrowth
-        tot_mcmc_outputs%rh(upgraded, inTime)             = simu_outputs%rh
-        tot_mcmc_outputs%nbp(upgraded, inTime)            = simu_outputs%nbp
-        tot_mcmc_outputs%wetlandCH4(upgraded, inTime)     = simu_outputs%wetlandCH4
-        tot_mcmc_outputs%wetlandCH4prod(upgraded, inTime) = simu_outputs%wetlandCH4prod
-        tot_mcmc_outputs%wetlandCH4cons(upgraded, inTime) = simu_outputs%wetlandCH4cons
+        tot_mcmc_outputs%gpp(iDAsimu, inTime)            = simu_outputs%gpp    
+        tot_mcmc_outputs%nee(iDAsimu, inTime)            = simu_outputs%nee
+        tot_mcmc_outputs%npp(iDAsimu, inTime)            = simu_outputs%npp
+        tot_mcmc_outputs%nppLeaf(iDAsimu, inTime)        = simu_outputs%nppLeaf
+        tot_mcmc_outputs%nppWood(iDAsimu, inTime)        = simu_outputs%nppWood
+        tot_mcmc_outputs%nppStem(iDAsimu, inTime)        = simu_outputs%nppStem
+        tot_mcmc_outputs%nppRoot(iDAsimu, inTime)        = simu_outputs%nppRoot
+        tot_mcmc_outputs%nppOther(iDAsimu, inTime)       = simu_outputs%nppOther
+        tot_mcmc_outputs%ra(iDAsimu, inTime)             = simu_outputs%ra
+        tot_mcmc_outputs%raLeaf(iDAsimu, inTime)         = simu_outputs%raLeaf
+        tot_mcmc_outputs%raStem(iDAsimu, inTime)         = simu_outputs%raStem
+        tot_mcmc_outputs%raRoot(iDAsimu, inTime)         = simu_outputs%raRoot
+        tot_mcmc_outputs%raOther(iDAsimu, inTime)        = simu_outputs%raOther
+        tot_mcmc_outputs%rMaint(iDAsimu, inTime)         = simu_outputs%rMaint
+        tot_mcmc_outputs%rGrowth(iDAsimu, inTime)        = simu_outputs%rGrowth
+        tot_mcmc_outputs%rh(iDAsimu, inTime)             = simu_outputs%rh
+        tot_mcmc_outputs%nbp(iDAsimu, inTime)            = simu_outputs%nbp
+        tot_mcmc_outputs%wetlandCH4(iDAsimu, inTime)     = simu_outputs%wetlandCH4
+        tot_mcmc_outputs%wetlandCH4prod(iDAsimu, inTime) = simu_outputs%wetlandCH4prod
+        tot_mcmc_outputs%wetlandCH4cons(iDAsimu, inTime) = simu_outputs%wetlandCH4cons
         ! Carbon Pools  (KgC m-2)
-        tot_mcmc_outputs%cLeaf(upgraded, inTime)          = simu_outputs%cLeaf
-        tot_mcmc_outputs%cStem(upgraded, inTime)          = simu_outputs%cStem
-        tot_mcmc_outputs%cRoot(upgraded, inTime)          = simu_outputs%cRoot
-        tot_mcmc_outputs%cOther(upgraded, inTime)         = simu_outputs%cOther
-        tot_mcmc_outputs%cLitter(upgraded, inTime)        = simu_outputs%cLitter
-        tot_mcmc_outputs%cLitterCwd(upgraded, inTime)     = simu_outputs%cLitterCwd
-        tot_mcmc_outputs%cSoil(upgraded, inTime)          = simu_outputs%cSoil
-        tot_mcmc_outputs%cSoilLevels(upgraded, inTime, :) = simu_outputs%cSoilLevels
-        tot_mcmc_outputs%cSoilFast(upgraded, inTime)      = simu_outputs%cSoilFast
-        tot_mcmc_outputs%cSoilSlow(upgraded, inTime)      = simu_outputs%cSoilSlow
-        tot_mcmc_outputs%cSoilPassive(upgraded, inTime)   = simu_outputs%cSoilPassive
-        tot_mcmc_outputs%CH4(upgraded, inTime, :)         = simu_outputs%CH4
+        tot_mcmc_outputs%cLeaf(iDAsimu, inTime)          = simu_outputs%cLeaf
+        tot_mcmc_outputs%cStem(iDAsimu, inTime)          = simu_outputs%cStem
+        tot_mcmc_outputs%cRoot(iDAsimu, inTime)          = simu_outputs%cRoot
+        tot_mcmc_outputs%cOther(iDAsimu, inTime)         = simu_outputs%cOther
+        tot_mcmc_outputs%cLitter(iDAsimu, inTime)        = simu_outputs%cLitter
+        tot_mcmc_outputs%cLitterCwd(iDAsimu, inTime)     = simu_outputs%cLitterCwd
+        tot_mcmc_outputs%cSoil(iDAsimu, inTime)          = simu_outputs%cSoil
+        tot_mcmc_outputs%cSoilLevels(iDAsimu, inTime, :) = simu_outputs%cSoilLevels
+        tot_mcmc_outputs%cSoilFast(iDAsimu, inTime)      = simu_outputs%cSoilFast
+        tot_mcmc_outputs%cSoilSlow(iDAsimu, inTime)      = simu_outputs%cSoilSlow
+        tot_mcmc_outputs%cSoilPassive(iDAsimu, inTime)   = simu_outputs%cSoilPassive
+        tot_mcmc_outputs%CH4(iDAsimu, inTime, :)         = simu_outputs%CH4
         ! Nitrogen fluxes (kgN m-2 s-1)
-        tot_mcmc_outputs%fBNF(upgraded, inTime)           = simu_outputs%fBNF
-        tot_mcmc_outputs%fN2O(upgraded, inTime)           = simu_outputs%fN2O
-        tot_mcmc_outputs%fNloss(upgraded, inTime)         = simu_outputs%fNloss
-        tot_mcmc_outputs%fNnetmin(upgraded, inTime)       = simu_outputs%fNnetmin
-        tot_mcmc_outputs%fNdep(upgraded, inTime)          = simu_outputs% fNdep
+        tot_mcmc_outputs%fBNF(iDAsimu, inTime)           = simu_outputs%fBNF
+        tot_mcmc_outputs%fN2O(iDAsimu, inTime)           = simu_outputs%fN2O
+        tot_mcmc_outputs%fNloss(iDAsimu, inTime)         = simu_outputs%fNloss
+        tot_mcmc_outputs%fNnetmin(iDAsimu, inTime)       = simu_outputs%fNnetmin
+        tot_mcmc_outputs%fNdep(iDAsimu, inTime)          = simu_outputs% fNdep
         ! Nitrogen pools (kgN m-2)
-        tot_mcmc_outputs%nLeaf(upgraded, inTime)          = simu_outputs%nLeaf
-        tot_mcmc_outputs%nStem(upgraded, inTime)          = simu_outputs%nStem
-        tot_mcmc_outputs%nRoot(upgraded, inTime)          = simu_outputs%nRoot
-        tot_mcmc_outputs%nOther(upgraded, inTime)         = simu_outputs%nOther
-        tot_mcmc_outputs%nLitter(upgraded, inTime)        = simu_outputs%nLitter
-        tot_mcmc_outputs%nLitterCwd(upgraded, inTime)     = simu_outputs%nLitterCwd
-        tot_mcmc_outputs%nSoil(upgraded, inTime)          = simu_outputs%nSoil
-        tot_mcmc_outputs%nMineral(upgraded, inTime)       = simu_outputs%nMineral
+        tot_mcmc_outputs%nLeaf(iDAsimu, inTime)          = simu_outputs%nLeaf
+        tot_mcmc_outputs%nStem(iDAsimu, inTime)          = simu_outputs%nStem
+        tot_mcmc_outputs%nRoot(iDAsimu, inTime)          = simu_outputs%nRoot
+        tot_mcmc_outputs%nOther(iDAsimu, inTime)         = simu_outputs%nOther
+        tot_mcmc_outputs%nLitter(iDAsimu, inTime)        = simu_outputs%nLitter
+        tot_mcmc_outputs%nLitterCwd(iDAsimu, inTime)     = simu_outputs%nLitterCwd
+        tot_mcmc_outputs%nSoil(iDAsimu, inTime)          = simu_outputs%nSoil
+        tot_mcmc_outputs%nMineral(iDAsimu, inTime)       = simu_outputs%nMineral
         ! energy fluxes (W m-2)
-        tot_mcmc_outputs%hfls(upgraded, inTime)           = simu_outputs%hfls
-        tot_mcmc_outputs%hfss(upgraded, inTime)           = simu_outputs%hfss
-        tot_mcmc_outputs%SWnet(upgraded, inTime)          = simu_outputs%SWnet
-        tot_mcmc_outputs%LWnet(upgraded, inTime)          = simu_outputs%LWnet
+        tot_mcmc_outputs%hfls(iDAsimu, inTime)           = simu_outputs%hfls
+        tot_mcmc_outputs%hfss(iDAsimu, inTime)           = simu_outputs%hfss
+        tot_mcmc_outputs%SWnet(iDAsimu, inTime)          = simu_outputs%SWnet
+        tot_mcmc_outputs%LWnet(iDAsimu, inTime)          = simu_outputs%LWnet
         ! water fluxes (kg m-2 s-1)
-        tot_mcmc_outputs%ec(upgraded, inTime)             = simu_outputs%ec
-        tot_mcmc_outputs%tran(upgraded, inTime)           = simu_outputs%tran
-        tot_mcmc_outputs%es(upgraded, inTime)             = simu_outputs%es
-        tot_mcmc_outputs%hfsbl(upgraded, inTime)          = simu_outputs%hfsbl
-        tot_mcmc_outputs%mrro(upgraded, inTime)           = simu_outputs%mrro
-        tot_mcmc_outputs%mrros(upgraded, inTime)          = simu_outputs%mrros
-        tot_mcmc_outputs%mrrob(upgraded, inTime)          = simu_outputs%mrrob
+        tot_mcmc_outputs%ec(iDAsimu, inTime)             = simu_outputs%ec
+        tot_mcmc_outputs%tran(iDAsimu, inTime)           = simu_outputs%tran
+        tot_mcmc_outputs%es(iDAsimu, inTime)             = simu_outputs%es
+        tot_mcmc_outputs%hfsbl(iDAsimu, inTime)          = simu_outputs%hfsbl
+        tot_mcmc_outputs%mrro(iDAsimu, inTime)           = simu_outputs%mrro
+        tot_mcmc_outputs%mrros(iDAsimu, inTime)          = simu_outputs%mrros
+        tot_mcmc_outputs%mrrob(iDAsimu, inTime)          = simu_outputs%mrrob
         ! other
-        tot_mcmc_outputs%mrso(upgraded, inTime, :)        = simu_outputs%mrso
-        tot_mcmc_outputs%tsl(upgraded, inTime, :)         = simu_outputs%tsl
-        tot_mcmc_outputs%tsland(upgraded, inTime)         = simu_outputs%tsland
-        tot_mcmc_outputs%wtd(upgraded, inTime)            = simu_outputs%wtd
-        tot_mcmc_outputs%snd(upgraded, inTime)            = simu_outputs%snd
-        tot_mcmc_outputs%lai(upgraded, inTime)            = simu_outputs%lai
+        tot_mcmc_outputs%mrso(iDAsimu, inTime, :)        = simu_outputs%mrso
+        tot_mcmc_outputs%tsl(iDAsimu, inTime, :)         = simu_outputs%tsl
+        tot_mcmc_outputs%tsland(iDAsimu, inTime)         = simu_outputs%tsland
+        tot_mcmc_outputs%wtd(iDAsimu, inTime)            = simu_outputs%wtd
+        tot_mcmc_outputs%snd(iDAsimu, inTime)            = simu_outputs%snd
+        tot_mcmc_outputs%lai(iDAsimu, inTime)            = simu_outputs%lai
         return
     end subroutine update_mcmc_tot_outputs
 

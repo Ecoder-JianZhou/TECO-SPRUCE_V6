@@ -6,7 +6,7 @@ module mcmc
 
     implicit none
 
-    integer npar4DA, iDAsimu, ipar, covexist
+    integer npar4DA, ipar, covexist
     
     real fact_rejet
     real J_last, J_new, accept_rate
@@ -123,7 +123,8 @@ module mcmc
         print *, "# Start to run mcmc ..."
         npft = count_pft
         call generate_newPar()
-        upgraded = 1
+        upgraded = 0
+        new = 0
         do iDAsimu = 1, nDAsimu
             write(*,*) iDAsimu, "/", nDAsimu, J_last, J_new, upgraded, accept_rate
             call mcmc_functions_init()  ! initialize the mc_itime ... variables
@@ -198,7 +199,7 @@ module mcmc
             ! updates of the covariance matrix
             do ipft = 1, npft
                 if (.not. do_cov2createNewPars .and. mod(upgraded, ncov).eq.0 .and. upgraded .ne. 0)then
-                    do_cov2createNewPars = .True.
+                    ! do_cov2createNewPars = .True.
                     mc_DApar(ipft)%coefac   = mc_DApar(ipft)%coefnorm          ! coefnorm: normized values between min and max values
                     call varcov(mc_DApar(ipft)%coefhistory, mc_DApar(ipft)%gamnew, npar4DA, ncov) !
                     if(.not.(all(mc_DApar(ipft)%gamnew==0.)))then
@@ -245,7 +246,7 @@ module mcmc
                     do igenPar = 1, npar4DA                                                 ! check the cov 
                         if(mc_DApar(ipft)%coefnorm(igenPar).lt.0. .or. mc_DApar(ipft)%coefnorm(igenPar).gt.1.)then
                             parflag=parflag+1
-                            write(*,*)'out of range',parflag
+                            ! write(*,*)'out of range',parflag
                         endif
                     enddo
                 enddo
@@ -294,7 +295,7 @@ module mcmc
         if(vars4MCMC%ANPP_Tree_y%existOrNot)then
             call CalculateCost(vars4MCMC%ANPP_Tree_y%mdData(:,4), vars4MCMC%ANPP_Tree_y%obsData(:,4),&
                  vars4MCMC%ANPP_Tree_y%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/400
+            J_new = J_new + J_cost/800
         endif
         print*, "J_new2: ", J_new
         ! print*, "test1:",vars4MCMC%ANPP_Tree_y%mdData(:,4), vars4MCMC%ANPP_Tree_y%mdData(:,1),&
@@ -304,7 +305,7 @@ module mcmc
         if(vars4MCMC%NPP_sphag_y%existOrNot)then
             call CalculateCost(vars4MCMC%NPP_sphag_y%mdData(:,4), vars4MCMC%NPP_sphag_y%obsData(:,4),&
                  vars4MCMC%NPP_sphag_y%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/1200
+            J_new = J_new + J_cost/2000
         endif
         print*, "J_new3: ", J_new
 
@@ -312,7 +313,7 @@ module mcmc
         if(vars4MCMC%BNPP_y%existOrNot)then
             call CalculateCost(vars4MCMC%BNPP_y%mdData(:,4), vars4MCMC%BNPP_y%obsData(:,4),&
                  vars4MCMC%BNPP_y%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/200
+            J_new = J_new + J_cost/400
         endif
         print*, "J_new4: ", J_new
         ! er_d          ! shrub + sphag.
@@ -341,14 +342,14 @@ module mcmc
         if(vars4MCMC%nee_d%existOrNot)then
             call CalculateCost(vars4MCMC%nee_d%mdData(:,4), vars4MCMC%nee_d%obsData(:,4),&
                  vars4MCMC%nee_d%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/10
+            J_new = J_new + J_cost/30
         endif
         print*, "J_new8: ", J_new
         ! nee_h         ! shrub + sphag.
         if(vars4MCMC%nee_h%existOrNot)then
             call CalculateCost(vars4MCMC%nee_h%mdData(:,4), vars4MCMC%nee_h%obsData(:,4),&
                  vars4MCMC%nee_h%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/8
+            J_new = J_new + J_cost/50
         endif
         print*, "J_new9: ", J_new
         ! LAI_d         ! tree  + Shrub
@@ -363,7 +364,7 @@ module mcmc
         if(vars4MCMC%leaf_mass_shrub_y%existOrNot)then
             call CalculateCost(vars4MCMC%leaf_mass_shrub_y%mdData(:,4), vars4MCMC%leaf_mass_shrub_y%obsData(:,4),&
                  vars4MCMC%leaf_mass_shrub_y%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/2000
+            J_new = J_new + J_cost/8000
         endif
         print*, "J_new11: ", J_new
 
@@ -371,7 +372,7 @@ module mcmc
         if(vars4MCMC%stem_mass_shrub_y%existOrNot)then
             call CalculateCost(vars4MCMC%stem_mass_shrub_y%mdData(:,4), vars4MCMC%stem_mass_shrub_y%obsData(:,4),&
                  vars4MCMC%stem_mass_shrub_y%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/5000
+            J_new = J_new + J_cost/8000
         endif
         print*, "J_new12: ", J_new
 
@@ -394,14 +395,14 @@ module mcmc
         if(vars4MCMC%ch4_d%existOrNot)then
             call CalculateCost(vars4MCMC%ch4_d%mdData(:,4), vars4MCMC%ch4_d%obsData(:,4),&
                  vars4MCMC%ch4_d%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/50000
+            J_new = J_new + J_cost/80000
         endif
         print*, "J_new15: ", J_new
         ! ch4_h
         if(vars4MCMC%ch4_h%existOrNot)then
             call CalculateCost(vars4MCMC%ch4_h%mdData(:,4), vars4MCMC%ch4_h%obsData(:,4),&
                  vars4MCMC%ch4_h%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/200
+            J_new = J_new + J_cost/400
         endif
         print*, "J_new16: ", J_new
         
@@ -409,7 +410,7 @@ module mcmc
         if(vars4MCMC%CN_shag_d%existOrNot)then
             call CalculateCost(vars4MCMC%CN_shag_d%mdData(:,4), vars4MCMC%CN_shag_d%obsData(:,4),&
                  vars4MCMC%CN_shag_d%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/6
+            J_new = J_new + J_cost/10
         endif
         print*, "J_new17: ", J_new
 
@@ -417,7 +418,7 @@ module mcmc
         if(vars4MCMC%photo_shrub_d%existOrNot)then
             call CalculateCost(vars4MCMC%photo_shrub_d%mdData(:,4), vars4MCMC%photo_shrub_d%obsData(:,4),&
                  vars4MCMC%photo_shrub_d%obsData(:,5), J_cost)
-            J_new = J_new + J_cost/4
+            J_new = J_new + J_cost/10
         endif
         print*, "J_new18: ", J_new
 
@@ -436,7 +437,7 @@ module mcmc
             delta_J = J_new - J_last
         endif
 
-        delta_J = delta_J
+        delta_J = delta_J/5
 
         call random_number(cs_rand)
         if(AMIN1(1.0, exp(-delta_J)) .gt. cs_rand)then
@@ -481,16 +482,17 @@ module mcmc
         real M(npara,npara),Mrac(npara,npara)
         real valpr(npara),vectpr(npara,npara)
         Mrac=0.
+        print*,M,npara,npara,valpr,vectpr,nrot 
         call jacobi(M,npara,npara,valpr,vectpr,nrot)
         do i=1,npara
-        if(valpr(i).ge.0.) then
+            if(valpr(i).ge.0.) then
                 Mrac(i,i)=sqrt(valpr(i))
-        else
+            else
                 print*, 'WARNING!!! Square root of the matrix is undefined.'
                 print*, ' A negative eigenvalue has been set to zero - results may be wrong'
                 Mrac=M
                 return
-        endif
+            endif
         enddo
         Mrac=matmul(matmul(vectpr, Mrac),transpose(vectpr))
 
