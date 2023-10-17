@@ -112,7 +112,7 @@ module mcmc
         J_last = 9000000.0
         ! init the outputs
         call init_mcmc_outputs(nDAsimu, npar4DA)
-        do_cov = .False.
+        do_cov = .True.
         do_cov2createNewPars = .False.
     end subroutine init_mcmc
 
@@ -205,7 +205,7 @@ module mcmc
                 do ipft = 1, npft
                     
                     if (.not. do_cov2createNewPars .and. mod(upgraded, ncov).eq.0 .and. upgraded .ne. 0)then
-                        ! do_cov2createNewPars = .True.
+                        do_cov2createNewPars = .True.
                         mc_DApar(ipft)%coefac   = mc_DApar(ipft)%coefnorm          ! coefnorm: normized values between min and max values
                         call varcov(mc_DApar(ipft)%coefhistory, mc_DApar(ipft)%gamnew, npar4DA, ncov) !
                         if(.not.(all(mc_DApar(ipft)%gamnew==0.)))then
