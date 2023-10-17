@@ -11,7 +11,7 @@ gfortran  -g -fbacktrace -Wall -fcheck=all -cpp -DUSE_NETCDF\
     `# src/tools/spinup.f90`  \
     src/main.f90 \
     -o run_teco \
-    -I/home/jz964/miniconda3/envs/spruce-da/include -L/home/jz964/miniconda3/envs/spruce-da/lib -lnetcdff -lnetcdf
+    -I/home/zhou_j/miniconda3/envs/spruce-da/include -L/home/zhou_j/miniconda3/envs/spruce-da/lib -lnetcdff -lnetcdf
 
 if find "src" -name "*.mod" -print -quit | grep -q '.*'; then
     rm src/*.mod

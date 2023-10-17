@@ -112,7 +112,7 @@ module mcmc
         J_last = 9000000.0
         ! init the outputs
         call init_mcmc_outputs(nDAsimu, npar4DA)
-        do_cov = .True.
+        do_cov = .False.
         do_cov2createNewPars = .False.
     end subroutine init_mcmc
 
